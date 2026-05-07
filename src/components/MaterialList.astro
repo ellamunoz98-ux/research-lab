@@ -1,0 +1,121 @@
+---
+import PDFViewer from "./PDFViewer.astro";
+import ExcelViewer from "./ExcelViewer.tsx";
+
+interface Material {
+  type: "pdf" | "excel";
+  /** 文件相对路径（相对于 public/pdfs 或 public/excel） */
+  file: string;
+  title: string;
+  /** 一句话简介，可选 */
+  desc?: string;
+  /** PDF 页数（可选） */
+  pages?: number;
+  /** 标签：方法 / 数据 / 维度 等 */
+  tag?: string;
+}
+
+interface Props {
+  title?: string;
+  intro?: string;
+  items: Material[];
+  /** 是否允许下载，默认 false（系列原始材料一般不让下） */
+  download?: boolean;
+}
+
+const {
+  title = "原始研究材料",
+  intro = "本系列研究的全部支撑材料，仅在线浏览，禁止下载传播。",
+  items,
+  download = false,
+} = Astro.props;
+
+const pdfCount = items.filter((m) => m.type === "pdf").length;
+const xlsxCount = items.filter((m) => m.type === "excel").length;
+---
+
+<section class="material-list my-12 not-prose">
+  <div class="flex items-end justify-between flex-wrap gap-3 mb-4 pb-4 border-b border-border-subtle">
+    <div>
+      <h2 class="text-2xl font-bold text-text-primary leading-tight">{title}</h2>
+      {intro && <p class="text-sm text-text-secondary mt-2 leading-relaxed">{intro}</p>}
+    </div>
+    <div class="text-xs font-mono text-text-muted flex items-center gap-3">
+      {pdfCount > 0 && <span>📄 {pdfCount} 份 PDF</span>}
+      {xlsxCount > 0 && <span>▦ {xlsxCount} 份 Excel</span>}
+    </div>
+  </div>
+
+  <div class="space-y-2.5">
+    {items.map((m, idx) => (
+      <details class="material-item glass !p-0 group" data-material-type={m.type}>
+        <summary class="cursor-pointer px-5 py-4 flex items-center gap-4 hover:bg-cyan-accent/5 transition-colors list-none [&::-webkit-details-marker]:hidden">
+          <span
+            class:list={[
+              "shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-sm font-mono",
+              m.type === "pdf"
+                ? "bg-amber-400/10 text-amber-400 border border-amber-400/30"
+                : "bg-emerald-accent/10 text-emerald-accent border border-emerald-accent/30",
+            ]}
+          >
+            {m.type === "pdf" ? "📄" : "▦"}
+          </span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs text-text-muted font-mono">#{(idx + 1).toString().padStart(2, "0")}</span>
+              {m.tag && (
+                <span class="text-[10px] px-1.5 py-0.5 rounded border border-cyan-accent/30 bg-cyan-accent/5 text-cyan-accent">
+                  {m.tag}
+                </span>
+              )}
+              <span class="text-text-primary font-medium truncate">{m.title}</span>
+            </div>
+            {m.desc && <div class="text-xs text-text-secondary mt-0.5 truncate">{m.desc}</div>}
+          </div>
+          <span class="shrink-0 text-xs text-text-muted font-mono flex items-center gap-1 transition-transform group-open:rotate-180">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </span>
+        </summary>
+        <div class="border-t border-border-subtle px-3 py-3 bg-bg-base/40">
+          {m.type === "pdf" ? (
+            <PDFViewer
+              file={m.file}
+              title={m.title}
+              pages={m.pages}
+              download={download}
+              lazy
+            />
+          ) : (
+            <ExcelViewer
+              client:visible
+              file={m.file}
+              title={m.title}
+              download={download}
+            />
+          )}
+        </div>
+      </details>
+    ))}
+  </div>
+</section>
+
+<style>
+  .material-item summary {
+    user-select: none;
+  }
+  .material-item[open] > summary {
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .material-item[open] {
+    border-color: rgba(34, 211, 238, 0.25);
+  }
+  /* 隐藏 details 默认箭头 */
+  .material-item > summary::-webkit-details-marker {
+    display: none;
+  }
+  .material-item > summary {
+    list-style: none;
+  }
+</style>

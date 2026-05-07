@@ -1,0 +1,54 @@
+---
+interface Props {
+  label: string;
+  value: string | number;
+  unit?: string;
+  delta?: string;
+  trend?: "up" | "down" | "neutral";
+  hint?: string;
+  accent?: "cyan" | "purple" | "emerald" | "rose" | "blue";
+}
+
+const {
+  label,
+  value,
+  unit,
+  delta,
+  trend = "neutral",
+  hint,
+  accent = "cyan",
+} = Astro.props;
+
+const accentColor = {
+  cyan: "text-cyan-accent",
+  purple: "text-purple-accent",
+  emerald: "text-emerald-accent",
+  rose: "text-rose-accent",
+  blue: "text-blue-accent",
+}[accent];
+
+const trendColor = {
+  up: "text-emerald-accent",
+  down: "text-rose-accent",
+  neutral: "text-text-muted",
+}[trend];
+
+const trendArrow = { up: "▲", down: "▼", neutral: "—" }[trend];
+---
+
+<div class="glass p-5 group">
+  <div class="text-xs text-text-muted tracking-wide mb-2">{label}</div>
+  <div class="flex items-baseline gap-1.5 mb-1">
+    <span class:list={["tabular text-3xl font-bold", accentColor]}>{value}</span>
+    {unit && <span class="text-sm text-text-secondary">{unit}</span>}
+  </div>
+  {
+    delta && (
+      <div class:list={["text-xs tabular flex items-center gap-1", trendColor]}>
+        <span>{trendArrow}</span>
+        <span>{delta}</span>
+      </div>
+    )
+  }
+  {hint && <div class="text-xs text-text-muted mt-2">{hint}</div>}
+</div>

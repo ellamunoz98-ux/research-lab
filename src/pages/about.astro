@@ -1,0 +1,145 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="关于" description="Shaun · 清华经管 · 个人投资研究网页">
+  <section class="max-w-3xl mx-auto px-6 pt-16 pb-10">
+    <div class="text-xs text-cyan-accent tracking-[0.3em] font-mono mb-4" data-reveal>ABOUT</div>
+    <h1 class="text-5xl font-bold leading-tight mb-3 text-text-primary" data-reveal>
+      你好，我是 <span class="gradient-text">Shaun</span>
+    </h1>
+    <p class="text-lg text-text-secondary mb-12" data-reveal>
+      清华经管 · 在读本科 · 个人投资研究爱好者
+    </p>
+
+    <!-- 名片卡 -->
+    <div class="glass p-6 mb-10 flex items-start gap-5" data-reveal>
+      <div class="shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-accent to-purple-accent flex items-center justify-center font-mono font-bold text-bg-base text-2xl shadow-lg">
+        S
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap mb-2">
+          <span class="text-text-primary font-semibold text-lg">Shaun</span>
+          <span class="text-xs px-2 py-0.5 rounded-full border border-cyan-accent/40 bg-cyan-accent/5 text-cyan-accent font-mono">
+            清华经管
+          </span>
+          <span class="text-xs px-2 py-0.5 rounded-full border border-border-default text-text-secondary font-mono">
+            投资研究
+          </span>
+        </div>
+        <p class="text-text-secondary leading-relaxed">
+          这是我的个人投资研究网页。
+          <span class="text-cyan-accent">欢迎朋友们来玩 :)</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 站点地图 -->
+  <section class="max-w-5xl mx-auto px-6 pb-16" data-reveal>
+    <div class="text-xs text-cyan-accent tracking-[0.3em] font-mono mb-3">SITE MAP</div>
+    <h2 class="text-3xl font-bold mb-2 text-text-primary">
+      你能在这里<span class="gradient-text">看到什么</span>
+    </h2>
+    <p class="text-sm text-text-secondary mb-8 max-w-2xl">本站现在共 5 个主要区，按用法划分：</p>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <a href="/" class="glass p-5 group hover:scale-[1.02] transition-transform">
+        <div class="text-cyan-accent text-xl mb-2">🌍 首页</div>
+        <h3 class="text-lg font-semibold text-text-primary mb-1 group-hover:text-cyan-accent transition-colors">主入口</h3>
+        <p class="text-xs text-text-secondary leading-relaxed">
+          实时滚动行情条 · 3D 地球点选区域 · 4 张实时浮卡 · 最新报告速览
+        </p>
+      </a>
+
+      <a href="/markets" class="glass p-5 group hover:scale-[1.02] transition-transform">
+        <div class="text-emerald-accent text-xl mb-2">📈 全球行情</div>
+        <h3 class="text-lg font-semibold text-text-primary mb-1 group-hover:text-cyan-accent transition-colors">市场总览</h3>
+        <p class="text-xs text-text-secondary leading-relaxed">
+          交互地球 · 16 对主要货币汇率 · 8 大央行政策利率
+        </p>
+      </a>
+
+      <a href="/reports" class="glass p-5 group hover:scale-[1.02] transition-transform">
+        <div class="text-purple-accent text-xl mb-2">📊 研究报告</div>
+        <h3 class="text-lg font-semibold text-text-primary mb-1 group-hover:text-cyan-accent transition-colors">深度研究</h3>
+        <p class="text-xs text-text-secondary leading-relaxed">
+          交互式 MDX 摘要 + PDF 原版 + Excel 数据，逐报告附带评论区
+        </p>
+      </a>
+
+      <a href="/news" class="glass p-5 group hover:scale-[1.02] transition-transform">
+        <div class="text-rose-accent text-xl mb-2">📰 资讯快线</div>
+        <h3 class="text-lg font-semibold text-text-primary mb-1 group-hover:text-cyan-accent transition-colors">国际财经</h3>
+        <p class="text-xs text-text-secondary leading-relaxed">
+          Investing / CoinDesk / CoinTelegraph 多源聚合，5 分钟自动刷新
+        </p>
+      </a>
+
+      <a href="/about" class="glass p-5 group hover:scale-[1.02] transition-transform md:col-span-2">
+        <div class="text-blue-accent text-xl mb-2">👤 关于</div>
+        <h3 class="text-lg font-semibold text-text-primary mb-1 group-hover:text-cyan-accent transition-colors">作者与说明</h3>
+        <p class="text-xs text-text-secondary leading-relaxed">
+          站长信息 · 站点理念 · 免责声明 · 联系方式
+        </p>
+      </a>
+    </div>
+  </section>
+
+  <!-- 主要内容 -->
+  <section class="max-w-3xl mx-auto px-6 pb-20">
+    <div class="prose-report space-y-6 text-text-primary leading-relaxed" data-reveal>
+      <h2>这里有什么</h2>
+      <p>
+        把我对感兴趣行业、公司的研究过程公开出来——数据从哪来、推理链路、关键变量、不确定性边界。
+        不是给"买什么"的答案，而是分享一种<strong class="text-cyan-accent">可质疑、可演进、可溯源</strong>的研究方法。
+      </p>
+
+      <h2>三个原则</h2>
+      <ul>
+        <li><strong class="text-cyan-accent">可溯源</strong>：每个数字都标注出处，原始数据 / Excel / PDF 全部公开</li>
+        <li><strong class="text-cyan-accent">可质疑</strong>：评论区永远开放，发现错误公开订正</li>
+        <li><strong class="text-cyan-accent">可演进</strong>：框架不是结论，会随事实更新版本</li>
+      </ul>
+
+      <h2>身份系统说明</h2>
+      <p>
+        点击页面右上角头像可以设置你的身份（昵称 + 角色 + 邮箱），
+        以后留言会自动用这个身份。
+        <strong>所有信息只存在你浏览器的 localStorage，不会上传任何服务器</strong>，
+        清浏览器数据即可彻底删除。
+      </p>
+
+      <h2>免责声明</h2>
+      <p class="text-text-secondary">
+        本站所有内容是个人研究、思考与练习记录，<strong>不构成任何投资建议</strong>。
+        市场存在不确定性，盈亏自负，投资决策请独立判断。
+        实时行情数据来自东方财富 / CoinGecko / ExchangeRate-API 公开接口，
+        本站不对其时效性、准确性负责。
+      </p>
+
+      <h2>联系</h2>
+      <p>
+        最方便的方式：在你感兴趣的报告页评论区留言。<br />
+        想私聊或合作，邮件、微信、知乎都欢迎——稍后补充联系方式。
+      </p>
+
+      <h2>致谢</h2>
+      <p class="text-text-secondary text-sm">
+        本站基于以下开源项目搭建：Astro · React · Tailwind CSS · Three.js · ECharts · GSAP · Waline · react-globe.gl。
+        所有研究内容由我独立完成，AI 辅助校对与排版。
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { gsap } from "gsap";
+  document.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el, i) => {
+    gsap.fromTo(
+      el,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.8, ease: "expo.out", delay: i * 0.08 }
+    );
+  });
+</script>

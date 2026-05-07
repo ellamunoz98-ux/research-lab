@@ -1,0 +1,222 @@
+---
+/**
+ * 央行决议看板（静态数据，定期手动更新）
+ * 数据更新日期：2026-05
+ */
+
+interface CentralBank {
+  id: string;
+  flag: string;
+  name: string;
+  shortName: string;
+  rateName: string;
+  rate: number;        // 当前主要利率（%）
+  prevRate: number;    // 上次决议前
+  lastChange: string;  // 最近一次变动日期
+  lastAction: "加息" | "降息" | "维持";
+  nextMeeting: string; // 下次会议（YYYY-MM-DD 或描述）
+  governor: string;
+  notes: string;
+  accent: "cyan" | "rose" | "purple" | "emerald" | "blue" | "amber";
+}
+
+const BANKS: CentralBank[] = [
+  {
+    id: "fed",
+    flag: "🇺🇸",
+    name: "美联储",
+    shortName: "Fed",
+    rateName: "联邦基金利率",
+    rate: 4.25,
+    prevRate: 4.50,
+    lastChange: "2026-03-19",
+    lastAction: "降息",
+    nextMeeting: "2026-06-18",
+    governor: "Jerome Powell",
+    notes: "通胀回落但 PCE 仍高于 2% 目标，3 月降息 25bp，市场定价年内还有 1–2 次降息",
+    accent: "blue",
+  },
+  {
+    id: "ecb",
+    flag: "🇪🇺",
+    name: "欧洲央行",
+    shortName: "ECB",
+    rateName: "存款机制利率",
+    rate: 2.50,
+    prevRate: 2.75,
+    lastChange: "2026-04-10",
+    lastAction: "降息",
+    nextMeeting: "2026-06-05",
+    governor: "Christine Lagarde",
+    notes: "欧元区通胀回落至 2.1%，但服务业通胀仍高，4 月降息 25bp",
+    accent: "purple",
+  },
+  {
+    id: "boe",
+    flag: "🇬🇧",
+    name: "英格兰银行",
+    shortName: "BoE",
+    rateName: "银行利率",
+    rate: 4.25,
+    prevRate: 4.50,
+    lastChange: "2026-02-06",
+    lastAction: "降息",
+    nextMeeting: "2026-05-22",
+    governor: "Andrew Bailey",
+    notes: "工资增速放缓，2 月降息 25bp，市场预期年内继续宽松",
+    accent: "blue",
+  },
+  {
+    id: "boj",
+    flag: "🇯🇵",
+    name: "日本央行",
+    shortName: "BoJ",
+    rateName: "短期政策利率",
+    rate: 0.50,
+    prevRate: 0.25,
+    lastChange: "2026-01-24",
+    lastAction: "加息",
+    nextMeeting: "2026-06-17",
+    governor: "Kazuo Ueda",
+    notes: "工资—物价良性循环成立，1 月加息 25bp，是后零利率时代第三次",
+    accent: "rose",
+  },
+  {
+    id: "pboc",
+    flag: "🇨🇳",
+    name: "中国人民银行",
+    shortName: "PBoC",
+    rateName: "1 年期 LPR",
+    rate: 3.10,
+    prevRate: 3.10,
+    lastChange: "2025-10-20",
+    lastAction: "维持",
+    nextMeeting: "2026-05-20",
+    governor: "潘功胜",
+    notes: "强调结构性工具与逆周期调节并重，5 月可能再降准",
+    accent: "rose",
+  },
+  {
+    id: "rba",
+    flag: "🇦🇺",
+    name: "澳洲联储",
+    shortName: "RBA",
+    rateName: "现金利率",
+    rate: 3.85,
+    prevRate: 4.10,
+    lastChange: "2026-04-01",
+    lastAction: "降息",
+    nextMeeting: "2026-05-20",
+    governor: "Michele Bullock",
+    notes: "通胀进入 2–3% 区间，4 月开启降息周期",
+    accent: "emerald",
+  },
+  {
+    id: "bsnk",
+    flag: "🇨🇭",
+    name: "瑞士国家银行",
+    shortName: "SNB",
+    rateName: "政策利率",
+    rate: 0.25,
+    prevRate: 0.50,
+    lastChange: "2026-03-20",
+    lastAction: "降息",
+    nextMeeting: "2026-06-20",
+    governor: "Martin Schlegel",
+    notes: "瑞郎走强压制通胀，3 月降息 25bp 至 0.25%",
+    accent: "cyan",
+  },
+  {
+    id: "bocan",
+    flag: "🇨🇦",
+    name: "加拿大央行",
+    shortName: "BoC",
+    rateName: "隔夜目标利率",
+    rate: 2.75,
+    prevRate: 3.00,
+    lastChange: "2026-03-12",
+    lastAction: "降息",
+    nextMeeting: "2026-06-04",
+    governor: "Tiff Macklem",
+    notes: "经济增速放缓，连续降息以缓解房贷压力",
+    accent: "rose",
+  },
+];
+
+const accentMap = {
+  cyan: "from-cyan-accent/20 to-cyan-accent/5 border-cyan-accent/30",
+  rose: "from-rose-accent/20 to-rose-accent/5 border-rose-accent/30",
+  purple: "from-purple-accent/20 to-purple-accent/5 border-purple-accent/30",
+  emerald: "from-emerald-accent/20 to-emerald-accent/5 border-emerald-accent/30",
+  blue: "from-blue-accent/20 to-blue-accent/5 border-blue-accent/30",
+  amber: "from-amber-400/20 to-amber-400/5 border-amber-400/30",
+};
+
+const actionColor = {
+  加息: "text-rose-accent border-rose-accent/40 bg-rose-accent/10",
+  降息: "text-emerald-accent border-emerald-accent/40 bg-emerald-accent/10",
+  维持: "text-text-secondary border-border-default bg-bg-card",
+};
+---
+
+<div>
+  <div class="mb-5">
+    <div class="text-xs text-cyan-accent tracking-[0.3em] font-mono mb-2">CENTRAL BANKS</div>
+    <h2 class="text-2xl font-bold text-text-primary">主要央行政策利率</h2>
+    <p class="text-xs text-text-secondary mt-1">
+      数据更新于 2026-05 · 实际决议以官方公告为准
+    </p>
+  </div>
+
+  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    {
+      BANKS.map((b) => {
+        const diff = b.rate - b.prevRate;
+        const diffBp = Math.round(diff * 100);
+        return (
+          <div class={`glass p-5 relative overflow-hidden bg-gradient-to-br ${accentMap[b.accent]}`}>
+            <div class="absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-30 blur-2xl pointer-events-none" style={`background: radial-gradient(circle, var(--color-${b.accent === 'amber' ? 'rose' : b.accent}-accent), transparent)`}></div>
+
+            <div class="relative">
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <div class="text-2xl mb-1">{b.flag}</div>
+                  <div class="text-text-primary font-semibold">{b.name}</div>
+                  <div class="text-[10px] text-text-muted font-mono">{b.shortName}</div>
+                </div>
+                <span class:list={["text-[10px] px-1.5 py-0.5 rounded border whitespace-nowrap", actionColor[b.lastAction]]}>
+                  {b.lastAction}
+                  {diffBp !== 0 && ` ${diffBp > 0 ? '+' : ''}${diffBp}bp`}
+                </span>
+              </div>
+
+              <div class="text-xs text-text-muted mb-1">{b.rateName}</div>
+              <div class="text-3xl font-bold text-text-primary tabular mb-3">
+                {b.rate.toFixed(2)}<span class="text-sm text-text-secondary ml-0.5">%</span>
+              </div>
+
+              <div class="text-[11px] space-y-1 mt-4 pt-3 border-t border-border-subtle">
+                <div class="flex justify-between text-text-secondary">
+                  <span>上次决议</span>
+                  <span class="text-text-primary font-mono">{b.lastChange}</span>
+                </div>
+                <div class="flex justify-between text-text-secondary">
+                  <span>下次会议</span>
+                  <span class="text-cyan-accent font-mono">{b.nextMeeting}</span>
+                </div>
+                <div class="flex justify-between text-text-secondary">
+                  <span>行长</span>
+                  <span class="text-text-primary truncate ml-2 text-right">{b.governor}</span>
+                </div>
+              </div>
+
+              <p class="text-[11px] text-text-secondary mt-3 leading-relaxed line-clamp-2" title={b.notes}>
+                {b.notes}
+              </p>
+            </div>
+          </div>
+        );
+      })
+    }
+  </div>
+</div>

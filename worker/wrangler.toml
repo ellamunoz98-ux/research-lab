@@ -1,0 +1,18 @@
+name = "research-lab-comments"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+
+# KV 命名空间绑定 — 部署前用 wrangler 创建并把 id 填进来
+# 命令：npx wrangler kv:namespace create COMMENTS
+[[kv_namespaces]]
+binding = "COMMENTS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[vars]
+# 允许跨域的来源；部署后改成你的网站域名（多个用逗号分隔）
+# 例：ALLOWED_ORIGIN = "https://research-lab.pages.dev,https://yourname.com"
+ALLOWED_ORIGIN = "*"
+
+# ⚠ ADMIN_TOKEN 不要写在这里！用以下命令安全注入：
+#   npx wrangler secret put ADMIN_TOKEN
+#   （会让你输入一次性的强密码，存在 Cloudflare 加密 secret 里）

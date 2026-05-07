@@ -1,0 +1,140 @@
+---
+// 首页主视觉
+import MarketTicker from "./MarketTicker.tsx";
+---
+
+<section class="relative min-h-[92vh] flex items-center justify-center overflow-hidden">
+  <!-- 背景：扫描线 + 光斑 -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div
+      class="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full opacity-20 blur-3xl bg-gradient-to-br from-cyan-accent to-blue-accent"
+      data-hero-blob="1"
+    >
+    </div>
+    <div
+      class="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full opacity-15 blur-3xl bg-gradient-to-br from-purple-accent to-rose-accent"
+      data-hero-blob="2"
+    >
+    </div>
+  </div>
+
+  <!-- 实时行情浮卡（上证、创业板、BTC、纳斯达克 100，30 秒刷新） -->
+  <MarketTicker client:only="react" />
+
+  <!-- 主内容 -->
+  <div class="relative z-10 max-w-5xl mx-auto px-6 text-center">
+    <div
+      class="inline-flex items-center gap-2 mb-8 px-3 py-1 rounded-full border border-border-default bg-bg-card/50 text-xs text-text-secondary opacity-0"
+      data-hero-tag
+    >
+      <span class="relative flex h-1.5 w-1.5">
+        <span class="absolute inset-0 rounded-full bg-cyan-accent opacity-75 animate-ping"></span>
+        <span class="relative rounded-full h-1.5 w-1.5 bg-cyan-accent"></span>
+      </span>
+      <span class="tracking-wider">独立研究 · 公开溯源</span>
+    </div>
+
+    <h1
+      class="text-display font-bold leading-[1.05] tracking-tight mb-6 opacity-0"
+      data-hero-title
+    >
+      <span class="block text-text-primary">把数据</span>
+      <span class="block gradient-text">变成洞见</span>
+    </h1>
+
+    <p
+      class="text-text-secondary text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed opacity-0"
+      data-hero-sub
+    >
+      行业研究 · 个股深度 · 数据可视化
+      <br class="hidden md:block" />
+      在这里，每一份报告都是一次结构化的思考
+    </p>
+
+    <div
+      class="flex flex-col sm:flex-row gap-3 justify-center items-center opacity-0"
+      data-hero-cta
+    >
+      <a
+        href="/reports"
+        class="group px-6 py-3 rounded-lg bg-gradient-to-r from-cyan-accent to-blue-accent text-bg-base font-semibold flex items-center gap-2 hover:shadow-[0_0_32px_-4px_rgba(34,211,238,0.6)] transition-all"
+      >
+        浏览全部研究
+        <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+        </svg>
+      </a>
+      <a
+        href="#highlights"
+        class="px-6 py-3 rounded-lg border border-border-default text-text-primary hover:border-cyan-accent hover:text-cyan-accent transition-all"
+      >
+        了解更多
+      </a>
+    </div>
+
+    <!-- 滚动指示 -->
+    <div
+      class="absolute -bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-text-muted opacity-0"
+      data-hero-scroll
+    >
+      <span class="text-xs tracking-widest">SCROLL</span>
+      <div class="w-px h-12 bg-gradient-to-b from-cyan-accent to-transparent"></div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { gsap } from "gsap";
+
+  const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
+
+  tl.fromTo(
+    "[data-hero-tag]",
+    { y: 20, opacity: 0 },
+    { y: 0, opacity: 1, duration: 0.8 }
+  )
+    .fromTo(
+      "[data-hero-title]",
+      { y: 40, opacity: 0 },
+      { y: 0, opacity: 1, duration: 1.2 },
+      "-=0.5"
+    )
+    .fromTo(
+      "[data-hero-sub]",
+      { y: 20, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.9 },
+      "-=0.7"
+    )
+    .fromTo(
+      "[data-hero-cta]",
+      { y: 20, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.8 },
+      "-=0.5"
+    )
+    .fromTo(
+      "[data-hero-scroll]",
+      { opacity: 0 },
+      { opacity: 1, duration: 1 },
+      "-=0.3"
+    );
+
+  // 滚动指示循环
+  gsap.to("[data-hero-scroll] > div", {
+    scaleY: 0.4,
+    transformOrigin: "top",
+    duration: 1.4,
+    repeat: -1,
+    yoyo: true,
+    ease: "sine.inOut",
+  });
+
+  // 鼠标视差
+  const blob1 = document.querySelector<HTMLElement>('[data-hero-blob="1"]');
+  const blob2 = document.querySelector<HTMLElement>('[data-hero-blob="2"]');
+  document.addEventListener("mousemove", (e) => {
+    const x = (e.clientX / window.innerWidth - 0.5) * 30;
+    const y = (e.clientY / window.innerHeight - 0.5) * 30;
+    if (blob1) gsap.to(blob1, { x, y, duration: 1.5, ease: "power2.out" });
+    if (blob2) gsap.to(blob2, { x: -x, y: -y, duration: 1.5, ease: "power2.out" });
+  });
+</script>

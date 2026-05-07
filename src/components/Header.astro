@@ -1,0 +1,84 @@
+---
+import IdentityWidget from "./IdentityWidget.tsx";
+
+const navItems = [
+  { href: "/", label: "首页" },
+  { href: "/markets", label: "全球行情" },
+  { href: "/reports", label: "研究报告" },
+  { href: "/news", label: "资讯快线" },
+  { href: "/about", label: "关于" },
+];
+const currentPath = Astro.url.pathname;
+---
+
+<header class="sticky top-0 z-50 backdrop-blur-xl bg-bg-base/70 border-b border-border-subtle">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 h-16 flex items-center justify-between gap-4">
+    <a href="/" class="flex items-center gap-2.5 group shrink-0">
+      <div class="relative w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-accent to-purple-accent flex items-center justify-center font-mono font-bold text-bg-base text-sm shadow-lg group-hover:scale-110 transition-transform duration-300">
+        R
+        <div class="absolute inset-0 rounded-lg bg-gradient-to-br from-cyan-accent to-purple-accent blur-md opacity-50 group-hover:opacity-80 transition-opacity -z-10"></div>
+      </div>
+      <span class="text-text-primary font-semibold tracking-wide hidden sm:inline">Research<span class="text-cyan-accent">.Lab</span></span>
+    </a>
+
+    <nav class="hidden md:flex items-center gap-1">
+      {
+        navItems.map((item) => {
+          const isActive =
+            item.href === "/" ? currentPath === "/" : currentPath.startsWith(item.href);
+          return (
+            <a
+              href={item.href}
+              class:list={[
+                "px-3 py-1.5 text-sm rounded-md transition-all relative whitespace-nowrap",
+                isActive
+                  ? "text-cyan-accent"
+                  : "text-text-secondary hover:text-text-primary",
+              ]}
+            >
+              {item.label}
+              {isActive && (
+                <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-cyan-accent shadow-[0_0_8px_2px_rgba(34,211,238,0.6)]"></span>
+              )}
+            </a>
+          );
+        })
+      }
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <IdentityWidget client:load />
+
+      <button
+        id="mobile-menu-btn"
+        class="md:hidden text-text-primary"
+        aria-label="菜单"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <nav id="mobile-menu" class="hidden md:hidden border-t border-border-subtle bg-bg-elevated">
+    <div class="px-6 py-3 space-y-1">
+      {
+        navItems.map((item) => (
+          <a
+            href={item.href}
+            class="block py-2 text-sm text-text-secondary hover:text-cyan-accent"
+          >
+            {item.label}
+          </a>
+        ))
+      }
+    </div>
+  </nav>
+</header>
+
+<script>
+  const btn = document.getElementById("mobile-menu-btn");
+  const menu = document.getElementById("mobile-menu");
+  btn?.addEventListener("click", () => menu?.classList.toggle("hidden"));
+</script>

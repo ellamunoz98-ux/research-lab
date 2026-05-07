@@ -1,0 +1,47 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ForexTable from "../components/ForexTable.tsx";
+import CentralBankBoard from "../components/CentralBankBoard.astro";
+import FinancialGlobe from "../components/FinancialGlobe.tsx";
+---
+
+<BaseLayout
+  title="全球行情"
+  description="3D 地球 · 全球指数 · 主要货币对 · 央行政策利率"
+>
+  <section class="pt-16 pb-8 px-6 max-w-7xl mx-auto">
+    <div class="text-xs text-cyan-accent tracking-[0.3em] font-mono mb-4" data-reveal>GLOBAL MARKETS</div>
+    <h1 class="text-5xl md:text-6xl font-bold leading-[1.1] mb-4 text-text-primary" data-reveal>
+      全球<span class="gradient-text">行情</span>
+    </h1>
+    <p class="text-lg text-text-secondary max-w-3xl leading-relaxed" data-reveal>
+      一站式查看：3D 地球点击查询区域指数 · 16 对主要货币汇率 · 8 大央行政策利率
+    </p>
+  </section>
+
+  <!-- 3D 地球 -->
+  <section class="px-6 max-w-7xl mx-auto py-8" data-reveal>
+    <FinancialGlobe client:only="react" />
+  </section>
+
+  <!-- 外汇 -->
+  <section class="px-6 max-w-7xl mx-auto py-12" data-reveal>
+    <ForexTable client:only="react" />
+  </section>
+
+  <!-- 央行 -->
+  <section class="px-6 max-w-7xl mx-auto py-12 pb-24" data-reveal>
+    <CentralBankBoard />
+  </section>
+</BaseLayout>
+
+<script>
+  import { gsap } from "gsap";
+  document.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el, i) => {
+    gsap.fromTo(
+      el,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.8, ease: "expo.out", delay: i * 0.08 }
+    );
+  });
+</script>

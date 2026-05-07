@@ -1,0 +1,138 @@
+---
+import type { CollectionEntry } from "astro:content";
+import type { MarkdownHeading } from "astro";
+import BaseLayout from "./BaseLayout.astro";
+import TableOfContents from "../components/TableOfContents.astro";
+import Comments from "../components/Comments.tsx";
+
+interface Props {
+  report: CollectionEntry<"reports">;
+  headings: MarkdownHeading[];
+}
+
+const { report, headings } = Astro.props;
+const { data, id } = report;
+
+const ratingColor = {
+  "买入": "text-emerald-accent border-emerald-accent/40 bg-emerald-accent/10",
+  "增持": "text-cyan-accent border-cyan-accent/40 bg-cyan-accent/10",
+  "中性": "text-text-secondary border-border-default bg-bg-card",
+  "减持": "text-rose-accent border-rose-accent/40 bg-rose-accent/10",
+  "卖出": "text-rose-accent border-rose-accent/40 bg-rose-accent/10",
+};
+
+const formattedDate = new Intl.DateTimeFormat("zh-CN", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+}).format(data.publishDate);
+
+const accentGradient = {
+  cyan: "from-cyan-accent/30 via-blue-accent/15 to-transparent",
+  purple: "from-purple-accent/30 via-rose-accent/15 to-transparent",
+  emerald: "from-emerald-accent/30 via-cyan-accent/15 to-transparent",
+  rose: "from-rose-accent/30 via-purple-accent/15 to-transparent",
+  blue: "from-blue-accent/30 via-purple-accent/15 to-transparent",
+}[data.accent];
+
+const commentsApi = import.meta.env.PUBLIC_COMMENTS_API;
+const walineURL = import.meta.env.PUBLIC_WALINE_SERVER_URL;
+const giscusRepo = import.meta.env.PUBLIC_GISCUS_REPO;
+const giscusRepoId = import.meta.env.PUBLIC_GISCUS_REPO_ID;
+const giscusCategory = import.meta.env.PUBLIC_GISCUS_CATEGORY;
+const giscusCategoryId = import.meta.env.PUBLIC_GISCUS_CATEGORY_ID;
+const giscusConfig =
+  giscusRepo && giscusRepoId && giscusCategory && giscusCategoryId
+    ? {
+        repo: giscusRepo as `${string}/${string}`,
+        repoId: giscusRepoId,
+        category: giscusCategory,
+        categoryId: giscusCategoryId,
+      }
+    : undefined;
+---
+
+<BaseLayout title={data.title} description={data.summary}>
+  <!-- Hero 区 -->
+  <section class="relative pt-12 pb-16 px-6 overflow-hidden">
+    <div
+      class:list={[
+        "absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-[400px] rounded-full blur-3xl opacity-50 pointer-events-none bg-gradient-to-b",
+        accentGradient,
+      ]}
+    >
+    </div>
+
+    <div class="relative max-w-4xl mx-auto">
+      <a
+        href="/reports"
+        class="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-cyan-accent transition-colors mb-8 group"
+      >
+        <span class="group-hover:-translate-x-1 transition-transform">←</span>
+        返回研究列表
+      </a>
+
+      <div class="flex flex-wrap items-center gap-2 mb-5 text-xs font-mono">
+        <span class="px-2 py-0.5 rounded border border-border-default bg-bg-card text-text-secondary">
+          {data.industry}
+        </span>
+        {data.rating && (
+          <span class:list={["px-2 py-0.5 rounded border", ratingColor[data.rating]]}>
+            {data.rating}{data.target && ` · ${data.target}`}
+          </span>
+        )}
+        <span class="text-text-muted">{formattedDate}</span>
+        {data.readingTime && <span class="text-text-muted">· {data.readingTime}</span>}
+      </div>
+
+      <h1 class="text-4xl md:text-5xl font-bold leading-[1.15] tracking-tight mb-4 text-text-primary">
+        {data.title}
+      </h1>
+      {data.subtitle && (
+        <p class="text-xl text-text-secondary mb-6 leading-relaxed">{data.subtitle}</p>
+      )}
+
+      <div class="glass p-5 mb-8">
+        <div class="text-xs text-cyan-accent mb-2 tracking-wider font-semibold">摘 要</div>
+        <p class="text-text-primary leading-relaxed">{data.summary}</p>
+      </div>
+
+      {data.tags.length > 0 && (
+        <div class="flex flex-wrap gap-2">
+          {data.tags.map((tag) => (
+            <span class="text-xs px-2.5 py-1 rounded-full bg-bg-card border border-border-subtle text-text-secondary">
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- 正文 + 目录 -->
+  <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_240px] gap-12">
+    <article class="prose-report max-w-3xl mx-auto lg:mx-0 w-full">
+      <slot />
+
+      <hr />
+
+      <!-- 评论 -->
+      <div id="comments" class="not-prose">
+        <h2 class="text-2xl font-bold mb-4 text-text-primary">讨论区</h2>
+        <Comments
+          path={`/reports/${id}`}
+          apiUrl={commentsApi}
+          serverURL={walineURL}
+          giscus={giscusConfig}
+          client:visible
+        />
+      </div>
+    </article>
+
+    <aside class="hidden lg:block">
+      <div class="sticky top-24">
+        <TableOfContents headings={headings} />
+      </div>
+    </aside>
+  </div>
+</BaseLayout>

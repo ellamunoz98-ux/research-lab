@@ -1,0 +1,36 @@
+---
+interface Props {
+  type?: "info" | "warning" | "success" | "danger" | "insight";
+  title?: string;
+}
+
+const { type = "info", title } = Astro.props;
+
+const config = {
+  info: { color: "cyan-accent", icon: "ℹ", label: "提示" },
+  warning: { color: "amber-400", icon: "⚠", label: "注意" },
+  success: { color: "emerald-accent", icon: "✓", label: "结论" },
+  danger: { color: "rose-accent", icon: "✕", label: "风险" },
+  insight: { color: "purple-accent", icon: "✦", label: "洞察" },
+};
+const { color, icon, label } = config[type];
+---
+
+<div
+  class:list={[
+    "my-6 rounded-xl border-l-2 p-4 pl-5 backdrop-blur-sm",
+    type === "info" && "border-cyan-accent bg-cyan-accent/5",
+    type === "warning" && "border-amber-400 bg-amber-400/5",
+    type === "success" && "border-emerald-accent bg-emerald-accent/5",
+    type === "danger" && "border-rose-accent bg-rose-accent/5",
+    type === "insight" && "border-purple-accent bg-purple-accent/5",
+  ]}
+>
+  <div class:list={["flex items-center gap-2 mb-2 text-sm font-semibold", `text-${color}`]}>
+    <span class="text-base">{icon}</span>
+    <span>{title || label}</span>
+  </div>
+  <div class="text-sm text-text-primary leading-relaxed [&>p:last-child]:mb-0 [&>p]:mb-2">
+    <slot />
+  </div>
+</div>

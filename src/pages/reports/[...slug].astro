@@ -1,0 +1,29 @@
+---
+import { getCollection, render } from "astro:content";
+import ReportLayout from "../../layouts/ReportLayout.astro";
+import PDFReportLayout from "../../layouts/PDFReportLayout.astro";
+
+export async function getStaticPaths() {
+  const reports = await getCollection("reports", ({ data }) => !data.draft);
+  return reports.map((report) => ({
+    params: { slug: report.id },
+    props: { report },
+  }));
+}
+
+const { report } = Astro.props;
+const { Content, headings } = await render(report);
+const isPDF = !!report.data.pdfFile;
+---
+
+{
+  isPDF ? (
+    <PDFReportLayout report={report}>
+      <Content />
+    </PDFReportLayout>
+  ) : (
+    <ReportLayout report={report} headings={headings}>
+      <Content />
+    </ReportLayout>
+  )
+}

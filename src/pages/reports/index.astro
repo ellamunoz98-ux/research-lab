@@ -1,0 +1,115 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ReportCard from "../../components/ReportCard.astro";
+import { getCollection } from "astro:content";
+
+const allReports = (await getCollection("reports", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime()
+);
+
+const industries = Array.from(new Set(allReports.map((r) => r.data.industry)));
+---
+
+<BaseLayout title="研究报告" description="行业研究、个股深度、数据分析报告全集">
+  <section class="pt-16 pb-12 px-6 max-w-7xl mx-auto">
+    <div class="text-xs text-cyan-accent tracking-[0.3em] font-mono mb-4" data-reveal>RESEARCH ARCHIVE</div>
+    <h1 class="text-5xl md:text-6xl font-bold leading-[1.1] mb-4 text-text-primary" data-reveal>
+      研究<span class="gradient-text">报告</span>
+    </h1>
+    <p class="text-lg text-text-secondary max-w-2xl leading-relaxed" data-reveal>
+      共 <span class="tabular text-cyan-accent">{allReports.length}</span> 份报告，覆盖 <span class="tabular text-cyan-accent">{industries.length}</span> 个行业方向
+    </p>
+  </section>
+
+  <!-- 筛选 -->
+  {industries.length > 0 && (
+    <section class="px-6 max-w-7xl mx-auto mb-10" data-reveal>
+      <div class="flex flex-wrap gap-2">
+        <button
+          data-filter="all"
+          class="filter-btn active px-3.5 py-1.5 text-sm rounded-full border border-cyan-accent text-cyan-accent bg-cyan-accent/10"
+        >
+          全部 · {allReports.length}
+        </button>
+        {industries.map((ind) => {
+          const count = allReports.filter((r) => r.data.industry === ind).length;
+          return (
+            <button
+              data-filter={ind}
+              class="filter-btn px-3.5 py-1.5 text-sm rounded-full border border-border-default text-text-secondary hover:border-cyan-accent hover:text-cyan-accent transition-all"
+            >
+              {ind} · {count}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  )}
+
+  <!-- 列表 -->
+  <section class="px-6 max-w-7xl mx-auto pb-24">
+    {allReports.length > 0 ? (
+      <div id="report-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {allReports.map((r) => (
+          <div class="report-item" data-industry={r.data.industry} data-reveal>
+            <ReportCard report={r} />
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div class="glass p-16 text-center">
+        <div class="text-5xl mb-4 opacity-50">📊</div>
+        <p class="text-text-secondary">暂无报告。在 <code class="text-cyan-accent">src/content/reports/</code> 添加你的第一篇 MDX。</p>
+      </div>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .filter-btn.active {
+    border-color: var(--color-cyan-accent);
+    color: var(--color-cyan-accent);
+    background: rgba(34, 211, 238, 0.1);
+  }
+</style>
+
+<script>
+  import { gsap } from "gsap";
+  import { ScrollTrigger } from "gsap/ScrollTrigger";
+  gsap.registerPlugin(ScrollTrigger);
+
+  document.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el) => {
+    gsap.fromTo(
+      el,
+      { opacity: 0, y: 30 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.9,
+        ease: "expo.out",
+        scrollTrigger: { trigger: el, start: "top 90%", toggleActions: "play none none none" },
+      }
+    );
+  });
+
+  const buttons = document.querySelectorAll<HTMLButtonElement>(".filter-btn");
+  const items = document.querySelectorAll<HTMLElement>(".report-item");
+
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      buttons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const filter = btn.dataset.filter;
+
+      items.forEach((item) => {
+        const show = filter === "all" || item.dataset.industry === filter;
+        if (show) {
+          item.style.display = "";
+          gsap.fromTo(item, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4 });
+        } else {
+          item.style.display = "none";
+        }
+      });
+    });
+  });
+</script>

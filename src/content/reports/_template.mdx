@@ -1,0 +1,173 @@
+---
+# ============ 这是模板报告，draft: true 不会发布 ============
+# 复制本文件 → 重命名为英文短横线格式（如 baijiu-2026.mdx）→ 把 draft 删掉
+# 文件名就是 URL：baijiu-2026.mdx → /reports/baijiu-2026
+# =============================================================
+
+title: "[必填] 报告标题，简洁有力"
+subtitle: "[可选] 副标题，一行话点出你的差异化视角"
+summary: "[必填] 2-4 句话摘要，会在卡片和报告头部显示。直接讲清楚你的核心结论是什么、用了什么数据、得出什么观点。"
+industry: "[必填] 行业名，会出现在卡片和筛选器，如：食品饮料 / 农林牧渔 / 新能源 / 半导体"
+tags: ["[可选] 标签", "[可选] 标签2", "[可选] 标签3"]
+rating: "增持"                    # 可选：买入/增持/中性/减持/卖出，不写就不显示
+target: "目标价 1900 元"           # 可选，跟在 rating 后面
+publishDate: 2026-05-07            # 必填，YYYY-MM-DD
+updateDate: 2026-05-08             # 可选，更新日期
+accent: "cyan"                     # 主色调：cyan/purple/emerald/rose/blue
+featured: false                    # 是否在首页 LATEST 区突出
+readingTime: "10 分钟"              # 可选，自己估一下
+draft: true                        # ← 模板默认 true 不发布；正式发表时删掉这行
+---
+
+{/* ============ 下面才是正文 ============ */}
+{/* 这种 {/* */} 是 MDX 注释，不会显示。下面的 import 必须写在最上面。 */}
+
+import LineChart from "../../components/charts/LineChart.tsx";
+import BarChart from "../../components/charts/BarChart.tsx";
+import PieChart from "../../components/charts/PieChart.tsx";
+import CandlestickChart from "../../components/charts/CandlestickChart.tsx";
+import Callout from "../../components/Callout.astro";
+import StatCard from "../../components/StatCard.astro";
+import ExcelViewer from "../../components/ExcelViewer.tsx";
+
+{/* === 开篇：核心结论用 Callout 框出 === */}
+
+<Callout type="success" title="核心结论">
+**用粗体强调最重要的判断。** 然后展开：基于什么数据、什么逻辑得出。Callout 类型可选 success/info/warning/danger/insight，颜色不同，对应不同语义。
+</Callout>
+
+{/* === KPI 数据墙：StatCard 横排 === */}
+
+<div class="not-prose grid grid-cols-2 md:grid-cols-4 gap-3 my-8">
+  <StatCard label="标签" value="数值" unit="单位" delta="+5.2% YoY" trend="up" accent="cyan" />
+  <StatCard label="标签" value="数值" unit="单位" delta="−2.1% MoM" trend="down" accent="emerald" />
+  <StatCard label="标签" value="数值" unit="单位" hint="说明文字" accent="purple" />
+  <StatCard label="标签" value="数值" unit="单位" trend="neutral" accent="rose" />
+</div>
+
+## 一、第一个章节标题
+
+正文段落。普通 Markdown 语法即可：**加粗**、*斜体*、[链接](https://example.com)、`行内代码`。
+
+中文段落会自动两端对齐。多行也没问题，Markdown 会按段落处理。
+
+### 1.1 子标题
+
+二级和三级标题会被自动加入右侧目录（侧边栏 TOC），方便长报告导航。
+
+> 引用块：用来放观点性句子或重要警示，会有左侧蓝条强调。
+
+### 1.2 表格
+
+| 指标 | 2024 | 2025 | YoY |
+|---|---|---|---|
+| 营收 | 1,200 | 1,450 | +20.8% |
+| 净利 | 180 | 240 | +33.3% |
+| 毛利率 | 35.2% | 36.8% | +1.6pp |
+
+表格表头会自动用主色高亮，鼠标悬停行变色。
+
+## 二、插入交互图表
+
+{/* === 折线图：趋势对比，最常用 === */}
+
+<LineChart
+  client:only="react"
+  title="图表标题"
+  subtitle="图表副标题（可选）"
+  source="数据来源（可选）"
+  height={360}
+  area
+  yUnit="元/吨"
+  xData={["2020", "2021", "2022", "2023", "2024", "2025"]}
+  series={[
+    { name: "系列A", data: [100, 120, 95, 110, 130, 145] },
+    { name: "系列B", data: [80, 90, 100, 95, 105, 115] },
+  ]}
+/>
+
+{/* === 柱状图：可堆叠/可横向 === */}
+
+<BarChart
+  client:only="react"
+  title="柱状图示例"
+  yUnit="亿元"
+  xData={["公司A", "公司B", "公司C", "公司D"]}
+  series={[
+    { name: "营收", data: [320, 280, 240, 180] },
+    { name: "净利", data: [80, 60, 45, 30] },
+  ]}
+  stacked={false}
+/>
+
+{/* === 饼图：占比 === */}
+
+<PieChart
+  client:only="react"
+  title="市场份额（2025）"
+  donut
+  centerLabel="2025"
+  data={[
+    { name: "公司A", value: 35 },
+    { name: "公司B", value: 25 },
+    { name: "公司C", value: 18 },
+    { name: "其他", value: 22 },
+  ]}
+/>
+
+{/* === K线：行情走势 === */}
+
+<CandlestickChart
+  client:only="react"
+  title="股价 K 线"
+  source="Wind"
+  data={[
+    /* 格式：[日期, 开, 收, 低, 高] */
+    ["2025-01-02", 1850, 1880, 1820, 1900],
+    ["2025-01-03", 1880, 1920, 1860, 1935],
+    ["2025-01-06", 1920, 1900, 1880, 1940],
+  ]}
+/>
+
+{/* === Excel 表格：直接展示原始 Excel 文件 === */}
+{/* 1. 把你的 .xlsx 文件拖到 网站/public/excel/ 文件夹 */}
+{/* 2. file 写文件名（不要加 /excel/ 前缀），其他参数都可选 */}
+{/* 3. 网页会自动渲染：支持多 sheet 切换、搜索、列排序、下载原文件 */}
+
+<ExcelViewer
+  client:only="react"
+  file="财务数据.xlsx"
+  title="2024 年合并财报"
+  source="公司年报"
+  height={500}
+/>
+
+## 三、不同类型的 Callout
+
+<Callout type="info" title="说明">
+中性的提示信息，蓝色调。
+</Callout>
+
+<Callout type="warning" title="注意">
+黄色的警示，提醒读者关注某个不确定性。
+</Callout>
+
+<Callout type="danger" title="风险">
+红色，用于关键风险点。
+</Callout>
+
+<Callout type="insight" title="深度洞察">
+紫色，用于"非共识观点"或"独到判断"。
+</Callout>
+
+## 四、风险提示
+
+报告底部一般放风险提示。把不确定性公开列出，比"100% 看好"显得更诚实。
+
+1. **风险一**：描述
+2. **风险二**：描述
+3. **风险三**：描述
+
+---
+
+> *本报告基于公开数据与个人判断，仅供研究讨论，不构成投资建议。如有错误请在评论区指出。*

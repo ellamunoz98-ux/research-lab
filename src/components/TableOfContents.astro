@@ -1,0 +1,68 @@
+---
+import type { MarkdownHeading } from "astro";
+
+interface Props {
+  headings: MarkdownHeading[];
+}
+
+const { headings } = Astro.props;
+const visible = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+{visible.length > 0 && (
+  <nav class="toc">
+    <div class="text-xs text-text-muted uppercase tracking-widest mb-3 font-mono">
+      目 录
+    </div>
+    <ul class="space-y-1.5">
+      {visible.map((h) => (
+        <li>
+          <a
+            href={`#${h.slug}`}
+            data-toc-link
+            data-toc-target={h.slug}
+            class:list={[
+              "toc-link block text-sm leading-relaxed transition-all py-1 border-l-2 border-transparent hover:border-cyan-accent/40 hover:text-text-primary text-text-secondary",
+              h.depth === 3 ? "pl-6 text-xs" : "pl-3",
+            ]}
+          >
+            {h.text}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+)}
+
+<style>
+  .toc-link.active {
+    border-color: var(--color-cyan-accent);
+    color: var(--color-cyan-accent);
+    background: linear-gradient(to right, rgba(34, 211, 238, 0.06), transparent);
+  }
+</style>
+
+<script>
+  const links = document.querySelectorAll<HTMLAnchorElement>("[data-toc-link]");
+  const ids = Array.from(links).map((l) => l.dataset.tocTarget!);
+  const sections = ids
+    .map((id) => document.getElementById(id))
+    .filter(Boolean) as HTMLElement[];
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          links.forEach((l) => l.classList.remove("active"));
+          const active = document.querySelector<HTMLAnchorElement>(
+            `[data-toc-target="${entry.target.id}"]`
+          );
+          active?.classList.add("active");
+        }
+      });
+    },
+    { rootMargin: "-20% 0px -70% 0px", threshold: 0 }
+  );
+
+  sections.forEach((s) => observer.observe(s));
+</script>

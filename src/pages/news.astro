@@ -1,0 +1,47 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import NewsFeed from "../components/NewsFeed.tsx";
+---
+
+<BaseLayout
+  title="资讯快线"
+  description="国际金融时事 · 全球股市、外汇、商品、加密资产新闻聚合，5 分钟自动刷新"
+>
+  <section class="pt-16 pb-12 px-6 max-w-7xl mx-auto">
+    <div class="text-xs text-cyan-accent tracking-[0.3em] font-mono mb-4" data-reveal>NEWS WIRE</div>
+    <h1 class="text-5xl md:text-6xl font-bold leading-[1.1] mb-4 text-text-primary" data-reveal>
+      资讯<span class="gradient-text">快线</span>
+    </h1>
+    <p class="text-lg text-text-secondary max-w-3xl leading-relaxed" data-reveal>
+      聚合 Investing.com、CoinDesk、CoinTelegraph 等国际权威财经媒体的 RSS，
+      涵盖股市、外汇、商品、加密资产、宏观经济五大类。
+      <br class="hidden md:block" />
+      5 分钟自动刷新，按时间倒序。点击新闻直达原文。
+    </p>
+  </section>
+
+  <section class="px-6 max-w-7xl mx-auto pb-24" data-reveal>
+    <NewsFeed client:only="react" />
+  </section>
+
+  <section class="px-6 max-w-7xl mx-auto pb-24" data-reveal>
+    <div class="glass p-5 text-xs text-text-muted leading-relaxed">
+      <strong class="text-text-secondary">⚠ 数据说明：</strong>
+      内容来自第三方 RSS 源，由 rss2json.com 中转后展示在本站，
+      <strong class="text-text-primary">本站不对内容真实性、时效性、合规性负责</strong>。
+      所有标题与摘要版权归原媒体所有，点击跳转至原文阅读。
+      如需用于投资决策，请通过原渠道核实。
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { gsap } from "gsap";
+  document.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el, i) => {
+    gsap.fromTo(
+      el,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.8, ease: "expo.out", delay: i * 0.08 }
+    );
+  });
+</script>

@@ -1,0 +1,53 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-32 border-t border-border-subtle bg-bg-elevated/50 backdrop-blur">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-12">
+    <div class="grid md:grid-cols-4 gap-8">
+      <div class="md:col-span-1">
+        <div class="flex items-center gap-2.5 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-accent to-purple-accent flex items-center justify-center font-mono font-bold text-bg-base text-sm">R</div>
+          <span class="text-text-primary font-semibold">Research<span class="text-cyan-accent">.Lab</span></span>
+        </div>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          独立研究 · 数据驱动 · 深度还原行业全貌
+        </p>
+        <p class="text-xs text-text-muted mt-2">by Shaun · 清华经管</p>
+      </div>
+
+      <div>
+        <h4 class="text-sm text-text-primary font-semibold mb-3">主要导航</h4>
+        <ul class="space-y-2 text-sm text-text-secondary">
+          <li><a href="/" class="hover:text-cyan-accent transition-colors">首页</a></li>
+          <li><a href="/markets" class="hover:text-cyan-accent transition-colors">全球行情</a></li>
+          <li><a href="/reports" class="hover:text-cyan-accent transition-colors">研究报告</a></li>
+          <li><a href="/news" class="hover:text-cyan-accent transition-colors">资讯快线</a></li>
+          <li><a href="/about" class="hover:text-cyan-accent transition-colors">关于</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="text-sm text-text-primary font-semibold mb-3">数据来源</h4>
+        <ul class="space-y-2 text-xs text-text-secondary">
+          <li>东方财富 · A 股 / 港股 / 美股</li>
+          <li>CoinGecko · 加密货币</li>
+          <li>ExchangeRate-API · 外汇</li>
+          <li>Investing / CoinDesk · 资讯 RSS</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="text-sm text-text-primary font-semibold mb-3">声明</h4>
+        <p class="text-xs text-text-muted leading-relaxed">
+          内容与实时行情仅供研究讨论，不构成投资建议。市场存在不确定性，决策需谨慎。
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-10 pt-6 border-t border-border-subtle flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p class="text-xs text-text-muted font-mono">© {year} Research.Lab · Built with Astro · React · Three.js</p>
+      <p class="text-xs text-text-muted">数据如时光，价值在沉淀中显现</p>
+    </div>
+  </div>
+</footer>
