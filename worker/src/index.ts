@@ -229,15 +229,23 @@ async function handleProxy(
   }
 
   try {
+    // 给东方财富的请求附加一个 fake 但格式合法的访客 cookie，
+    // 模拟刚从 eastmoney.com 主站跳过来的浏览器访问，避开 IP 段 + 无 cookie 的 502 反爬
+    const extraHeaders: Record<string, string> = {};
+    if (service === "em" || service === "em-search") {
+      extraHeaders["Cookie"] =
+        "qgqp_b_id=ec6fa70a4c43e7a3ad06d8e2c0baf4ea; em_hq_fls=js; HAList=ty-1-000001-%u4E0A%u8BC1%u6307%u6570";
+    }
+
     const upstream = await fetch(upstreamUrl, {
       method: "GET",
       headers: {
-        // 模拟真实 Chrome + 上游官网 Referer，绕过反爬（EM 对纯 API host 的 Referer 会返 502）
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
         Referer: target.referer,
         Accept: "*/*",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        ...extraHeaders,
       },
       redirect: "follow",
     });
