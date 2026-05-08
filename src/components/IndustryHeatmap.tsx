@@ -282,7 +282,7 @@ function ExpandedDetail({ board }: { board: BoardQuote }) {
     setLoading(true);
     Promise.allSettled([
       fetchBoardStocks(board.code, 5),
-      fetchBoardNews(board.code),
+      fetchBoardNews(board.name),
     ]).then(([s, n]) => {
       if (cancelled) return;
       setStocks(s.status === "fulfilled" ? s.value : []);
@@ -292,7 +292,7 @@ function ExpandedDetail({ board }: { board: BoardQuote }) {
     return () => {
       cancelled = true;
     };
-  }, [board.code]);
+  }, [board.code, board.name]);
 
   return (
     <div className="mt-1.5 pl-5 pr-3 py-3 rounded-lg bg-bg-base/60 border border-border-subtle space-y-3 animate-[fadeIn_0.18s_ease-out]">

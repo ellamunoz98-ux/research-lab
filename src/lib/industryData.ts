@@ -28,6 +28,14 @@ interface RawDiff {
   f62?: number;
 }
 
+/** 东方财富的 diff 字段有时是数组，有时是 {"0": {...}, "1": {...}} 对象，统一成数组 */
+function normalizeDiff(diff: unknown): RawDiff[] {
+  if (!diff) return [];
+  if (Array.isArray(diff)) return diff as RawDiff[];
+  if (typeof diff === "object") return Object.values(diff as Record<string, RawDiff>);
+  return [];
+}
+
 async function fetchBoardList(kind: "concept" | "industry"): Promise<BoardQuote[]> {
   // m:90 t:2 = 行业板块；t:3 = 概念板块
   const t = kind === "concept" ? 3 : 2;
@@ -35,7 +43,7 @@ async function fetchBoardList(kind: "concept" | "industry"): Promise<BoardQuote[
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
-  const items: RawDiff[] = json?.data?.diff ?? [];
+  const items = normalizeDiff(json?.data?.diff);
   return items
     .filter((it) => it.f12 && it.f14)
     .map((it) => ({
@@ -99,7 +107,7 @@ export async function fetchBoardStocks(
   const res = await fetch(url);
   if (!res.ok) return [];
   const json = await res.json();
-  const items: Record<string, number | string | undefined>[] = json?.data?.diff ?? [];
+  const items = normalizeDiff(json?.data?.diff) as Record<string, number | string | undefined>[];
   return items
     .filter((it) => it.f12 && it.f14)
     .slice(0, top)
@@ -120,36 +128,59 @@ export interface BoardNews {
   time: number;
 }
 
-export async function fetchBoardNews(boardCode: string): Promise<BoardNews[]> {
-  // 东方财富板块新闻列表（部分板块代码可能没有新闻接口数据，需做兜底）
-  const url = `https://np-listapi.eastmoney.com/comm/web/getListInfo?type=NEWS_TPLATEINFOLIST&order=time&plateCode=${boardCode}&pageIndex=1&pageSize=5&_=${Date.now()}`;
+/** 用板块名作为关键词，从东方财富 CMS 搜索最新报道 */
+export async function fetchBoardNews(boardName: string): Promise<BoardNews[]> {
+  // 关键词：去掉常见尾缀（"概念" / "Ⅱ" / 括号注释）提高召回率
+  const keyword = boardName
+    .replace(/[\(（].*?[\)）]/g, "")
+    .replace(/概念$/, "")
+    .replace(/Ⅱ$/, "")
+    .trim();
+  const param = JSON.stringify({
+    uid: "",
+    keyword,
+    type: ["cmsArticleWebOld"],
+    client: "web",
+    clientType: "web",
+    clientVersion: "curr",
+    pageIndex: 1,
+    pageSize: 5,
+  });
+  const url = `https://search-api-web.eastmoney.com/search/jsonp?cb=&param=${encodeURIComponent(param)}`;
   try {
     const res = await fetch(url);
     if (!res.ok) return [];
-    const json = await res.json();
-    interface RawNews {
+    const text = await res.text();
+    // 剥离 JSONP 外层括号 — 响应形如 `({...})` 或 `({...});`
+    const trimmed = text.replace(/^\s*\(/, "").replace(/\)\s*;?\s*$/, "");
+    const json = JSON.parse(trimmed);
+    interface RawArticle {
       title?: string;
       url?: string;
-      shareUrl?: string;
       mediaName?: string;
-      source?: string;
-      publishTime?: string | number;
+      date?: string;
     }
-    const items: RawNews[] = json?.data?.list ?? [];
+    const items: RawArticle[] = json?.result?.cmsArticleWebOld ?? [];
     return items
-      .filter((it) => it.title)
-      .map((it) => ({
-        title: it.title!,
-        link: it.url || it.shareUrl || "#",
-        source: it.mediaName || it.source || "东方财富",
-        time:
-          typeof it.publishTime === "string"
-            ? new Date(it.publishTime).getTime()
-            : (it.publishTime ?? Date.now()),
+      .filter((a) => a.title)
+      .map((a) => ({
+        title: stripHighlight(a.title!),
+        link: a.url || "#",
+        source: a.mediaName || "东方财富",
+        time: a.date ? new Date(a.date.replace(" ", "T") + "+08:00").getTime() : Date.now(),
       }));
   } catch {
     return [];
   }
+}
+
+function stripHighlight(s: string): string {
+  return s
+    .replace(/<\/?em>/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .trim();
 }
 
 /**
