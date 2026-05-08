@@ -188,13 +188,18 @@ const PROXY_TARGETS: Record<string, ProxyTarget> = {
     host: "https://api.rss2json.com",
     referer: "https://rss2json.com/",
   },
+  bnb: {
+    host: "https://api.binance.com",
+    referer: "https://www.binance.com/",
+  },
 };
 
 /** 不同数据源的边缘缓存 TTL（秒）— 静态/慢变数据 TTL 更长 */
 const CACHE_TTL: Record<string, number> = {
   em: 20,         // 行情指数：20 秒
   "em-search": 300, // 板块新闻：5 分钟
-  cg: 30,         // 加密货币：30 秒
+  cg: 30,         // 加密货币 (CG)：30 秒
+  bnb: 20,        // 加密货币 (Binance)：20 秒
   er: 1800,       // 汇率：30 分钟
   rss: 300,       // RSS：5 分钟
 };

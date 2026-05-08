@@ -7,8 +7,8 @@ import { proxied } from "../lib/proxy";
  */
 
 interface Ticker {
-  source: "eastmoney" | "coingecko";
-  symbol: string;       // EM secid 或 CG id
+  source: "eastmoney" | "binance";
+  symbol: string;       // EM secid 或 Binance pair (BTCUSDT)
   label: string;
   prefix?: string;
   decimals?: number;
@@ -27,8 +27,9 @@ const TICKERS: Ticker[] = [
   { source: "eastmoney", symbol: "100.FTSE", label: "富时100" },
   { source: "eastmoney", symbol: "100.GDAXI", label: "DAX" },
   { source: "eastmoney", symbol: "100.N225", label: "日经225" },
-  { source: "coingecko", symbol: "bitcoin", label: "BTC", prefix: "$", decimals: 0 },
-  { source: "coingecko", symbol: "ethereum", label: "ETH", prefix: "$", decimals: 0 },
+  // Binance：替换 CoinGecko，避开共享 IP 撞 CG 限速 429
+  { source: "binance", symbol: "BTCUSDT", label: "BTC", prefix: "$", decimals: 0 },
+  { source: "binance", symbol: "ETHUSDT", label: "ETH", prefix: "$", decimals: 0 },
 ];
 
 interface Quote {
@@ -44,7 +45,7 @@ interface Quote {
 async function fetchAll(): Promise<Map<string, Quote>> {
   const result = new Map<string, Quote>();
   const emTickers = TICKERS.filter((t) => t.source === "eastmoney");
-  const cgTickers = TICKERS.filter((t) => t.source === "coingecko");
+  const bnbTickers = TICKERS.filter((t) => t.source === "binance");
 
   // —— 东方财富批量（ulist.np 用 f2 最新价 / f3 涨跌幅，与单 stock/get 的 f43/f170 不同）
   const emPromise = (async () => {
@@ -74,23 +75,28 @@ async function fetchAll(): Promise<Map<string, Quote>> {
     }
   })();
 
-  // —— CoinGecko 批量
-  const cgPromise = (async () => {
-    if (cgTickers.length === 0) return;
-    const ids = cgTickers.map((t) => t.symbol).join(",");
+  // —— Binance 批量（绕开 CoinGecko 共享 IP 限速 429）
+  const bnbPromise = (async () => {
+    if (bnbTickers.length === 0) return;
+    const symbolsParam = encodeURIComponent(
+      JSON.stringify(bnbTickers.map((t) => t.symbol))
+    );
     try {
       const r = await fetch(
         proxied(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`
+          `https://api.binance.com/api/v3/ticker/24hr?symbols=${symbolsParam}`
         )
       );
-      const j = await r.json();
-      cgTickers.forEach((t) => {
-        const d = j?.[t.symbol];
-        if (!d) return;
-        result.set(t.symbol, {
-          price: d.usd,
-          changePct: d.usd_24h_change ?? 0,
+      const arr = (await r.json()) as Array<{
+        symbol: string;
+        lastPrice: string;
+        priceChangePercent: string;
+      }>;
+      if (!Array.isArray(arr)) return;
+      arr.forEach((d) => {
+        result.set(d.symbol, {
+          price: parseFloat(d.lastPrice),
+          changePct: parseFloat(d.priceChangePercent),
         });
       });
     } catch {
@@ -98,7 +104,7 @@ async function fetchAll(): Promise<Map<string, Quote>> {
     }
   })();
 
-  await Promise.all([emPromise, cgPromise]);
+  await Promise.all([emPromise, bnbPromise]);
   return result;
 }
 

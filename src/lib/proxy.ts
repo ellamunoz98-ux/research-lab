@@ -20,6 +20,7 @@ const SERVICE_MAP: Record<string, string> = {
   "api.coingecko.com": "cg",
   "open.er-api.com": "er",
   "api.rss2json.com": "rss",
+  "api.binance.com": "bnb",
 };
 
 /**

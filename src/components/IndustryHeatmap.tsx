@@ -279,26 +279,24 @@ function SubBoardRow({
 }
 
 function ExpandedDetail({ board }: { board: BoardQuote }) {
-  const [stocks, setStocks] = useState<StockQuote[] | null>(null);
+  // 成分股接口（push2 clist/get fs=b:BK...）被 EM 反爬 502，
+  // 直接走外链不再发请求，避免每次点开板块都等数秒 502
+  const stocks: StockQuote[] | null = null;
   const [news, setNews] = useState<BoardNews[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    Promise.allSettled([
-      fetchBoardStocks(board.code, 5),
-      fetchBoardNews(board.name),
-    ]).then(([s, n]) => {
+    fetchBoardNews(board.name).then((items) => {
       if (cancelled) return;
-      setStocks(s.status === "fulfilled" ? s.value : []);
-      setNews(n.status === "fulfilled" ? n.value : []);
+      setNews(items);
       setLoading(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [board.code, board.name]);
+  }, [board.name]);
 
   return (
     <div className="mt-1.5 pl-5 pr-3 py-3 rounded-lg bg-bg-base/60 border border-border-subtle space-y-3 animate-[fadeIn_0.18s_ease-out]">
