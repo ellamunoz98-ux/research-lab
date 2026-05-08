@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import IndustryHeatmap from "../components/IndustryHeatmap.tsx";
+import IndustryTreemap from "../components/IndustryTreemap.tsx";
 ---
 
 <BaseLayout
@@ -15,16 +15,16 @@ import IndustryHeatmap from "../components/IndustryHeatmap.tsx";
       行业<span class="gradient-text">热力图</span>
     </h1>
     <p class="text-lg text-text-secondary max-w-3xl leading-relaxed" data-reveal>
-      8 大主线 · 40+ 热门子板块。涨跌幅 + 主力净流入合成"热度分"，
-      点开任意子板块查看龙头股动向 + 媒体讨论焦点 ——
-      <strong class="text-text-primary">用脚投票 + 媒体共识 = 当下市场对该方向的真实判断</strong>。
+      8 大主线 · 40+ 热门子板块的实时热力分布。
+      <strong class="text-text-primary">方格大小 = 主力资金净流入</strong>，
+      <strong class="text-text-primary">方格颜色 = 当日涨跌</strong>（红涨绿跌）。
       <br class="hidden md:block" />
-      数据来自东方财富，5 分钟自动刷新。
+      点击任一格查看龙头股动向 + 媒体讨论焦点 —— 5 分钟自动刷新。
     </p>
   </section>
 
   <section class="px-6 max-w-7xl mx-auto pb-24" data-reveal>
-    <IndustryHeatmap client:only="react" />
+    <IndustryTreemap client:only="react" />
   </section>
 </BaseLayout>
 
