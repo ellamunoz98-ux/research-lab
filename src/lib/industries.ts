@@ -156,7 +156,7 @@ export const INDUSTRIES: IndustryDef[] = [
     name: "AI 算力",
     icon: "🚀",
     tagline: "训练 + 推理算力链：硬件 / 互联 / 散热",
-    subBoards: ["算力概念", "CPO概念", "PCB", "存储芯片", "数据中心"],
+    subBoards: ["算力概念", "CPO概念", "PCB", "液冷概念", "存储芯片", "数据中心"],
   },
   {
     id: "semiconductor",
@@ -165,6 +165,7 @@ export const INDUSTRIES: IndustryDef[] = [
     tagline: "国产替代主线，从设备材料到设计封测全链条",
     subBoards: [
       "半导体设备",
+      "半导体材料",
       "集成电路制造",
       "集成电路封测",
       "第三代半导体",
@@ -190,14 +191,14 @@ export const INDUSTRIES: IndustryDef[] = [
     name: "创新药",
     icon: "💊",
     tagline: "减肥药 / ADC / 小核酸驱动的新一轮创新周期",
-    subBoards: ["创新药", "减肥药", "医疗器械概念"],
+    subBoards: ["创新药", "减肥药", "医疗器械概念", "医疗器械"],
   },
   {
     id: "defense-aerospace",
     name: "军工 / 低空",
     icon: "🛰",
     tagline: "国防装备 + 商业航天 + 低空经济",
-    subBoards: ["低空经济", "卫星互联网", "军工"],
+    subBoards: ["商业航天", "低空经济", "卫星互联网", "北斗导航", "军工"],
   },
   {
     id: "consumer-electronics",
@@ -211,6 +212,6 @@ export const INDUSTRIES: IndustryDef[] = [
     name: "大消费",
     icon: "🍷",
     tagline: "食饮 / 白酒 / 家电 / 旅游 — 内需修复",
-    subBoards: ["白酒", "食品饮料", "旅游酒店", "免税概念"],
+    subBoards: ["白酒", "食品饮料", "白色家电", "旅游酒店", "免税概念"],
   },
 ];

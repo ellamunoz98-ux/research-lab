@@ -418,8 +418,9 @@ function TreemapCell({
           {emoji}
         </div>
       )}
-      {/* 行业图片（如果有就铺满，做"杂志封面"感） */}
-      {imageUrl && !tiny && (
+      {/* 行业图片（如果有就铺满，做"杂志封面"感）— 不论格子多小都渲染，
+          小格子只是缩成迷你缩略图，仍然有视觉提示 */}
+      {imageUrl && (
         <img
           src={imageUrl}
           alt=""
@@ -432,7 +433,7 @@ function TreemapCell({
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            opacity: imgLoaded ? 0.78 : 0,
+            opacity: imgLoaded ? (tiny ? 0.85 : 0.78) : 0,
             transition: "opacity 0.4s ease-out",
             pointerEvents: "none",
             zIndex: 1,
