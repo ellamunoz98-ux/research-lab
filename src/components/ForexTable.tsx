@@ -1,28 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-
-interface PairConfig {
-  id: string;
-  base: string;
-  quote: string;
-  label: string;
-  flag: [string, string]; // [base flag, quote flag]
-  highlight?: boolean;
-}
-
-const PAIRS: PairConfig[] = [
-  { id: "eurusd", base: "EUR", quote: "USD", label: "欧元 / 美元", flag: ["🇪🇺", "🇺🇸"], highlight: true },
-  { id: "usdjpy", base: "USD", quote: "JPY", label: "美元 / 日元", flag: ["🇺🇸", "🇯🇵"], highlight: true },
-  { id: "gbpusd", base: "GBP", quote: "USD", label: "英镑 / 美元", flag: ["🇬🇧", "🇺🇸"] },
-  { id: "audusd", base: "AUD", quote: "USD", label: "澳元 / 美元", flag: ["🇦🇺", "🇺🇸"] },
-  { id: "usdcad", base: "USD", quote: "CAD", label: "美元 / 加元", flag: ["🇺🇸", "🇨🇦"] },
-  { id: "usdchf", base: "USD", quote: "CHF", label: "美元 / 瑞郎", flag: ["🇺🇸", "🇨🇭"] },
-  { id: "usdcny", base: "USD", quote: "CNY", label: "美元 / 人民币", flag: ["🇺🇸", "🇨🇳"], highlight: true },
-  { id: "eurcny", base: "EUR", quote: "CNY", label: "欧元 / 人民币", flag: ["🇪🇺", "🇨🇳"] },
-  { id: "gbpcny", base: "GBP", quote: "CNY", label: "英镑 / 人民币", flag: ["🇬🇧", "🇨🇳"] },
-  { id: "jpycny", base: "JPY", quote: "CNY", label: "日元 / 人民币", flag: ["🇯🇵", "🇨🇳"] },
-  { id: "hkdcny", base: "HKD", quote: "CNY", label: "港币 / 人民币", flag: ["🇭🇰", "🇨🇳"] },
-  { id: "usdkrw", base: "USD", quote: "KRW", label: "美元 / 韩元", flag: ["🇺🇸", "🇰🇷"] },
-];
+import { PAIRS, CURRENCY_META, rateDiff, type PairConfig } from "../lib/forex";
+import { flagUrl } from "../lib/flags";
+import { fetchBoardNews, timeAgo, type BoardNews } from "../lib/industryData";
 
 interface RateData {
   base: string;
@@ -43,37 +22,26 @@ async function fetchRates(base: string): Promise<RateData> {
   };
 }
 
+interface ComputedPair extends PairConfig {
+  rate: number | null;
+}
+
 export default function ForexTable() {
-  const [usdRates, setUsdRates] = useState<RateData | null>(null);
-  const [eurRates, setEurRates] = useState<RateData | null>(null);
-  const [gbpRates, setGbpRates] = useState<RateData | null>(null);
-  const [jpyRates, setJpyRates] = useState<RateData | null>(null);
-  const [hkdRates, setHkdRates] = useState<RateData | null>(null);
-  const [audRates, setAudRates] = useState<RateData | null>(null);
+  const [allRates, setAllRates] = useState<Record<string, RateData>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<ComputedPair | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-
     async function load() {
       try {
-        // 平行加载多基础货币（不同 base 各请求一次）
-        const [usd, eur, gbp, jpy, hkd, aud] = await Promise.all([
-          fetchRates("USD"),
-          fetchRates("EUR"),
-          fetchRates("GBP"),
-          fetchRates("JPY"),
-          fetchRates("HKD"),
-          fetchRates("AUD"),
-        ]);
+        const bases = ["USD", "EUR", "GBP", "JPY", "HKD", "AUD"];
+        const results = await Promise.all(bases.map(fetchRates));
         if (cancelled) return;
-        setUsdRates(usd);
-        setEurRates(eur);
-        setGbpRates(gbp);
-        setJpyRates(jpy);
-        setHkdRates(hkd);
-        setAudRates(aud);
+        const m: Record<string, RateData> = {};
+        bases.forEach((b, i) => (m[b] = results[i]));
+        setAllRates(m);
         setError(null);
       } catch (e) {
         if (!cancelled) setError((e as Error).message);
@@ -81,47 +49,35 @@ export default function ForexTable() {
         if (!cancelled) setLoading(false);
       }
     }
-
     load();
-    const id = setInterval(load, 30 * 60 * 1000); // 30 分钟刷新（ER-API 自身约 24 小时刷新）
+    const id = setInterval(load, 30 * 60 * 1000);
     return () => {
       cancelled = true;
       clearInterval(id);
     };
   }, []);
 
-  const computed = useMemo(() => {
-    if (loading) return [];
+  const computed = useMemo<ComputedPair[]>(() => {
     return PAIRS.map((p) => {
-      const baseRates =
-        p.base === "USD"
-          ? usdRates
-          : p.base === "EUR"
-            ? eurRates
-            : p.base === "GBP"
-              ? gbpRates
-              : p.base === "JPY"
-                ? jpyRates
-                : p.base === "HKD"
-                  ? hkdRates
-                  : p.base === "AUD"
-                    ? audRates
-                    : null;
-      if (!baseRates) return { ...p, rate: null };
-      const rate = baseRates.rates[p.quote];
+      const baseRates = allRates[p.base];
+      const rate = baseRates?.rates?.[p.quote] ?? null;
       return { ...p, rate };
     });
-  }, [loading, usdRates, eurRates, gbpRates, jpyRates, hkdRates, audRates]);
+  }, [allRates]);
 
-  const updatedAt = usdRates?.updatedAt ?? null;
+  const updatedAt = allRates.USD?.updatedAt ?? null;
 
   return (
     <div>
       <div className="flex items-end justify-between flex-wrap gap-3 mb-5">
         <div>
-          <div className="text-xs text-cyan-accent tracking-[0.3em] font-mono mb-2">FOREX</div>
+          <div className="text-xs text-cyan-accent tracking-[0.3em] font-mono mb-2">
+            FOREX
+          </div>
           <h2 className="text-2xl font-bold text-text-primary">主要货币对</h2>
-          <p className="text-xs text-text-secondary mt-1">数据来源：ExchangeRate-API（每日更新）</p>
+          <p className="text-xs text-text-secondary mt-1">
+            数据来源：ExchangeRate-API（每日更新）· 点击卡片查看驱动因素 + 利差
+          </p>
         </div>
         <div className="text-xs text-text-muted font-mono flex items-center gap-2">
           <span
@@ -139,7 +95,7 @@ export default function ForexTable() {
         </div>
       </div>
 
-      {error && !usdRates ? (
+      {error && Object.keys(allRates).length === 0 ? (
         <div className="glass p-8 text-center">
           <div className="text-rose-accent text-sm mb-2">⚠ {error}</div>
           <button
@@ -152,40 +108,384 @@ export default function ForexTable() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {computed.map((p) => (
-            <div
-              key={p.id}
-              className={`glass p-4 ${p.highlight ? "border-cyan-accent/30" : ""}`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-text-secondary text-xs font-mono flex items-center gap-1.5">
-                  <span className="text-base">{p.flag[0]}</span>
-                  <span className="text-text-muted">→</span>
-                  <span className="text-base">{p.flag[1]}</span>
-                </div>
-                {p.highlight && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-accent/10 text-cyan-accent border border-cyan-accent/30">
-                    主要
-                  </span>
-                )}
-              </div>
-              <div className="text-xs text-text-muted mb-1">{p.label}</div>
-              <div className="text-2xl tabular text-text-primary font-semibold">
-                {p.rate != null ? (
-                  p.rate.toLocaleString(undefined, {
-                    minimumFractionDigits: p.rate > 100 ? 2 : 4,
-                    maximumFractionDigits: p.rate > 100 ? 2 : 4,
-                  })
-                ) : (
-                  <span className="text-text-muted">—</span>
-                )}
-              </div>
-              <div className="text-[10px] text-text-muted font-mono mt-1">
-                1 {p.base} = ? {p.quote}
-              </div>
-            </div>
+            <PairCard key={p.id} p={p} onClick={() => setSelected(p)} />
           ))}
         </div>
       )}
+
+      {selected && (
+        <ForexDetailModal
+          pair={selected}
+          onClose={() => setSelected(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function PairCard({
+  p,
+  onClick,
+}: {
+  p: ComputedPair;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative overflow-hidden glass p-4 text-left hover:scale-[1.02] hover:border-cyan-accent/50 transition-all ${
+        p.highlight ? "border-cyan-accent/30" : ""
+      }`}
+    >
+      {/* 双国旗背景：左半边 base 国旗，右半边 quote 国旗 */}
+      <img
+        src={flagUrl(p.base, 320)}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          width: "50%",
+          height: "100%",
+          objectFit: "cover",
+          opacity: 0.18,
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <img
+        src={flagUrl(p.quote, 320)}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        style={{
+          position: "absolute",
+          right: 0,
+          top: 0,
+          width: "50%",
+          height: "100%",
+          objectFit: "cover",
+          opacity: 0.18,
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      {/* 暗色蒙层 */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(13,18,32,0.78) 0%, rgba(13,18,32,0.55) 50%, rgba(13,18,32,0.85) 100%)",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+      />
+
+      <div className="relative" style={{ zIndex: 2 }}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-text-secondary text-xs font-mono flex items-center gap-1.5">
+            <span className="text-base">{p.flag[0]}</span>
+            <span className="text-text-muted">→</span>
+            <span className="text-base">{p.flag[1]}</span>
+          </div>
+          {p.highlight && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-accent/10 text-cyan-accent border border-cyan-accent/30">
+              主要
+            </span>
+          )}
+        </div>
+        <div className="text-xs text-text-muted mb-1">{p.label}</div>
+        <div
+          className="text-2xl tabular text-text-primary font-semibold"
+          style={{ textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
+        >
+          {p.rate != null ? (
+            p.rate.toLocaleString(undefined, {
+              minimumFractionDigits: p.rate > 100 ? 2 : 4,
+              maximumFractionDigits: p.rate > 100 ? 2 : 4,
+            })
+          ) : (
+            <span className="text-text-muted">—</span>
+          )}
+        </div>
+        <div className="text-[10px] text-text-muted font-mono mt-1">
+          1 {p.base} = ? {p.quote}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function ForexDetailModal({
+  pair,
+  onClose,
+}: {
+  pair: ComputedPair;
+  onClose: () => void;
+}) {
+  const [news, setNews] = useState<BoardNews[] | null>(null);
+  const [newsLoading, setNewsLoading] = useState(true);
+
+  const baseMeta = CURRENCY_META[pair.base];
+  const quoteMeta = CURRENCY_META[pair.quote];
+  const diff = rateDiff(pair.base, pair.quote);
+
+  useEffect(() => {
+    let cancelled = false;
+    setNewsLoading(true);
+    // 用本币对名称（如"美元日元"）作关键词搜索
+    const kw = `${baseMeta?.name ?? pair.base}${quoteMeta?.name ?? pair.quote}`;
+    fetchBoardNews(kw).then((items) => {
+      if (cancelled) return;
+      setNews(items);
+      setNewsLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pair.id]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-start justify-center px-4 py-8 backdrop-blur-md bg-bg-base/80 overflow-y-auto animate-[fadeIn_0.2s_ease-out]"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-w-3xl w-full glass overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 双国旗背景 */}
+        <img
+          src={flagUrl(pair.base, 1280)}
+          alt=""
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: "50%",
+            height: "100%",
+            objectFit: "cover",
+            opacity: 0.22,
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+        <img
+          src={flagUrl(pair.quote, 1280)}
+          alt=""
+          style={{
+            position: "absolute",
+            right: 0,
+            top: 0,
+            width: "50%",
+            height: "100%",
+            objectFit: "cover",
+            opacity: 0.22,
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(135deg, rgba(13,18,32,0.92) 0%, rgba(13,18,32,0.78) 50%, rgba(13,18,32,0.65) 100%)",
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        />
+
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-bg-card/60 hover:bg-bg-card flex items-center justify-center text-text-muted hover:text-text-primary transition-colors backdrop-blur-sm"
+          style={{ zIndex: 10 }}
+          aria-label="关闭"
+        >
+          ✕
+        </button>
+
+        <div className="relative p-8" style={{ zIndex: 2 }}>
+          {/* Header */}
+          <div className="flex items-start gap-4 mb-6 pb-5 border-b border-border-subtle">
+            <div className="text-4xl">
+              {pair.flag[0]} {pair.flag[1]}
+            </div>
+            <div className="flex-1">
+              <div className="text-xs text-cyan-accent tracking-[0.3em] font-mono mb-1">
+                FX PAIR · {pair.base}/{pair.quote}
+              </div>
+              <h2
+                className="text-3xl font-bold text-text-primary"
+                style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
+              >
+                {pair.label}
+              </h2>
+              <div className="text-sm text-text-secondary mt-1">
+                当前汇率{" "}
+                <span className="text-text-primary font-mono font-semibold text-lg">
+                  {pair.rate != null
+                    ? pair.rate.toLocaleString(undefined, {
+                        minimumFractionDigits: pair.rate > 100 ? 2 : 4,
+                        maximumFractionDigits: pair.rate > 100 ? 2 : 4,
+                      })
+                    : "—"}
+                </span>
+                <span className="text-text-muted ml-2">
+                  1 {pair.base} = {pair.quote}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 利差对比 */}
+          <div className="mb-6">
+            <div className="text-[10px] text-cyan-accent font-mono tracking-wider mb-3">
+              POLICY RATE DIFF · 利差对比
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <RateBlock
+                flag={pair.flag[0]}
+                code={pair.base}
+                name={baseMeta?.name ?? pair.base}
+                bank={baseMeta?.centralBank ?? "—"}
+                rate={baseMeta?.policyRate ?? 0}
+              />
+              <div className="flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-[10px] text-text-muted font-mono">利差</div>
+                  <div
+                    className={`text-2xl font-bold tabular ${
+                      diff > 0
+                        ? "text-rose-accent"
+                        : diff < 0
+                          ? "text-emerald-accent"
+                          : "text-text-secondary"
+                    }`}
+                  >
+                    {diff > 0 ? "+" : ""}
+                    {diff.toFixed(2)}%
+                  </div>
+                  <div className="text-[10px] text-text-muted mt-1">
+                    {diff > 0 ? `${pair.base} 利率更高` : diff < 0 ? `${pair.quote} 利率更高` : "持平"}
+                  </div>
+                </div>
+              </div>
+              <RateBlock
+                flag={pair.flag[1]}
+                code={pair.quote}
+                name={quoteMeta?.name ?? pair.quote}
+                bank={quoteMeta?.centralBank ?? "—"}
+                rate={quoteMeta?.policyRate ?? 0}
+              />
+            </div>
+          </div>
+
+          {/* 驱动因素 */}
+          <div className="mb-6">
+            <div className="text-[10px] text-purple-accent font-mono tracking-wider mb-2">
+              DRIVERS · 主要驱动
+            </div>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              {pair.driver}
+            </p>
+          </div>
+
+          {/* 历史区间 */}
+          <div className="mb-6">
+            <div className="text-[10px] text-emerald-accent font-mono tracking-wider mb-2">
+              HISTORICAL RANGE · 历史区间
+            </div>
+            <div className="text-sm text-text-secondary px-3 py-2 rounded bg-bg-card/40 border border-border-subtle">
+              {pair.range}
+            </div>
+          </div>
+
+          {/* 媒体观点 */}
+          <div>
+            <div className="text-[10px] text-cyan-accent font-mono tracking-wider mb-3">
+              RECENT NEWS · 近期媒体讨论
+            </div>
+            {newsLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-12 bg-text-muted/10 rounded animate-pulse"
+                  ></div>
+                ))}
+              </div>
+            ) : news && news.length > 0 ? (
+              <div className="space-y-2">
+                {news.slice(0, 5).map((n, i) => (
+                  <a
+                    key={i}
+                    href={n.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block px-3 py-2 rounded bg-bg-card/40 border border-border-subtle hover:border-cyan-accent/40 group"
+                  >
+                    <div className="text-sm text-text-secondary group-hover:text-cyan-accent leading-relaxed line-clamp-2">
+                      {n.title}
+                    </div>
+                    <div className="text-[10px] text-text-muted font-mono mt-1">
+                      {n.source} · {timeAgo(n.time)}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-text-muted px-3 py-3">
+                暂无相关报道
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RateBlock({
+  flag,
+  code,
+  name,
+  bank,
+  rate,
+}: {
+  flag: string;
+  code: string;
+  name: string;
+  bank: string;
+  rate: number;
+}) {
+  return (
+    <div className="rounded-lg p-3 bg-bg-card/40 border border-border-subtle text-center">
+      <div className="text-2xl mb-1">{flag}</div>
+      <div className="text-xs text-text-primary font-semibold">{name}</div>
+      <div className="text-[10px] text-text-muted font-mono mb-2">{code}</div>
+      <div className="text-xl font-bold tabular text-text-primary">
+        {rate.toFixed(2)}%
+      </div>
+      <div className="text-[10px] text-text-muted font-mono mt-0.5">{bank}</div>
     </div>
   );
 }

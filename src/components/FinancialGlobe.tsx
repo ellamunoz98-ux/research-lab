@@ -17,6 +17,26 @@ import {
 } from "../lib/marketHours";
 import { sunDirectionVector } from "../lib/solar";
 import { CHOKEPOINTS, CONFLICT_ZONES } from "../lib/geoRisk";
+import { flagUrl } from "../lib/flags";
+
+/** 金融中心 id → ISO 国家代码（用于国旗图） */
+const CENTER_FLAG_CODE: Record<string, string | null> = {
+  "cn-mainland": "cn",
+  hk: "hk",
+  "us-east": "us",
+  uk: "gb",
+  de: "de",
+  fr: "fr",
+  jp: "jp",
+  kr: "kr",
+  in: "in",
+  sg: "sg",
+  au: "au",
+  br: "br",
+  ca: "ca",
+  ru: "ru",
+  crypto: null,
+};
 
 interface PointProps extends Record<string, unknown> {
   lat: number;
@@ -591,13 +611,49 @@ function SidePanel({
   const sess = sessions.get(center.id);
   const sCol = sess ? statusColor(sess.status) : "#64748b";
   const sLabel = sess ? statusLabel(sess.status) : "—";
+  const flagCode = CENTER_FLAG_CODE[center.id] ?? null;
 
   return (
-    <div className="glass p-5 min-h-[400px] lg:min-h-[640px] lg:max-h-[640px] overflow-y-auto">
+    <div className="relative glass p-5 min-h-[400px] lg:min-h-[640px] lg:max-h-[640px] overflow-y-auto overflow-x-hidden">
+      {/* 国家国旗背景 */}
+      {flagCode && (
+        <>
+          <img
+            src={flagUrl(flagCode, 1280)}
+            alt=""
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              opacity: 0.18,
+              pointerEvents: "none",
+              zIndex: 0,
+            }}
+          />
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(160deg, rgba(13,18,32,0.92) 0%, rgba(13,18,32,0.78) 50%, rgba(13,18,32,0.65) 100%)",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          />
+        </>
+      )}
+
+      <div className="relative" style={{ zIndex: 2 }}>
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="text-3xl mb-1">{center.flag}</div>
-          <h3 className="text-xl font-bold text-text-primary leading-tight">
+          <h3
+            className="text-xl font-bold text-text-primary leading-tight"
+            style={{ textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
+          >
             {center.name}
           </h3>
           <div className="text-xs text-text-muted font-mono mt-0.5">
@@ -606,7 +662,7 @@ function SidePanel({
         </div>
         <button
           onClick={onClose}
-          className="w-7 h-7 rounded-full hover:bg-bg-card flex items-center justify-center text-text-muted hover:text-text-primary text-sm transition-colors"
+          className="w-7 h-7 rounded-full bg-bg-card/50 hover:bg-bg-card flex items-center justify-center text-text-muted hover:text-text-primary text-sm transition-colors backdrop-blur-sm"
           aria-label="关闭"
         >
           ✕
@@ -651,6 +707,7 @@ function SidePanel({
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-accent animate-pulse"></span>
           数据 30 秒前 · 点击其他点切换
         </div>
+      </div>
       </div>
     </div>
   );

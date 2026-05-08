@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ForexTable from "../components/ForexTable.tsx";
-import CentralBankBoard from "../components/CentralBankBoard.astro";
+import CentralBankBoard from "../components/CentralBankBoard.tsx";
 import FinancialGlobe from "../components/FinancialGlobe.tsx";
 ---
 
@@ -31,7 +31,7 @@ import FinancialGlobe from "../components/FinancialGlobe.tsx";
 
   <!-- 央行 -->
   <section class="px-6 max-w-7xl mx-auto py-12 pb-24" data-reveal>
-    <CentralBankBoard />
+    <CentralBankBoard client:only="react" />
   </section>
 </BaseLayout>
 
