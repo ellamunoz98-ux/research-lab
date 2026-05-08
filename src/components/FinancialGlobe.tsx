@@ -17,7 +17,7 @@ import {
 } from "../lib/marketHours";
 import { sunDirectionVector } from "../lib/solar";
 import { CHOKEPOINTS, CONFLICT_ZONES } from "../lib/geoRisk";
-import { flagUrl } from "../lib/flags";
+import { flagUrl, preloadFlags } from "../lib/flags";
 
 /** 金融中心 id → ISO 国家代码（用于国旗图） */
 const CENTER_FLAG_CODE: Record<string, string | null> = {
@@ -92,6 +92,14 @@ export default function FinancialGlobe() {
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
+  }, []);
+
+  // 预加载所有金融中心对应国旗，切换时立刻命中浏览器缓存
+  useEffect(() => {
+    const codes = Object.values(CENTER_FLAG_CODE).filter(
+      (c): c is string => !!c
+    );
+    preloadFlags(codes, 640);
   }, []);
 
   // 各市场会话状态
@@ -625,7 +633,8 @@ function SidePanel({
           }}
         >
           <img
-            src={flagUrl(flagCode, 1280)}
+            key={flagCode}
+            src={flagUrl(flagCode, 640)}
             alt=""
             style={{
               position: "absolute",

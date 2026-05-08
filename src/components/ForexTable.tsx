@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { PAIRS, CURRENCY_META, rateDiff, type PairConfig } from "../lib/forex";
-import { flagUrl } from "../lib/flags";
+import { flagUrl, preloadFlags } from "../lib/flags";
 import { fetchBoardNews, timeAgo, type BoardNews } from "../lib/industryData";
 
 interface RateData {
@@ -31,6 +31,16 @@ export default function ForexTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<ComputedPair | null>(null);
+
+  // 预加载所有货币对涉及的国旗
+  useEffect(() => {
+    const codes = new Set<string>();
+    PAIRS.forEach((p) => {
+      codes.add(p.base);
+      codes.add(p.quote);
+    });
+    preloadFlags(Array.from(codes), 640);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -270,7 +280,8 @@ function ForexDetailModal({
         >
           <div className="relative flex-1 border-r border-border-subtle/40">
             <img
-              src={flagUrl(pair.base, 1280)}
+              key={pair.base}
+              src={flagUrl(pair.base, 640)}
               alt=""
               style={{
                 position: "absolute",
@@ -289,7 +300,8 @@ function ForexDetailModal({
           </div>
           <div className="relative flex-1">
             <img
-              src={flagUrl(pair.quote, 1280)}
+              key={pair.quote}
+              src={flagUrl(pair.quote, 640)}
               alt=""
               style={{
                 position: "absolute",

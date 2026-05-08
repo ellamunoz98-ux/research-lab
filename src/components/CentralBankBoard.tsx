@@ -5,11 +5,16 @@ import {
   ACTION_COLOR,
   type CentralBank,
 } from "../lib/centralBanks";
-import { flagUrl, BANK_FLAG } from "../lib/flags";
+import { flagUrl, BANK_FLAG, preloadFlags } from "../lib/flags";
 import { fetchBoardNews, timeAgo, type BoardNews } from "../lib/industryData";
 
 export default function CentralBankBoard() {
   const [selected, setSelected] = useState<CentralBank | null>(null);
+
+  // 预加载 8 家央行国旗
+  useEffect(() => {
+    preloadFlags(Object.values(BANK_FLAG), 640);
+  }, []);
 
   return (
     <div>
@@ -177,7 +182,8 @@ function BankDetailModal({
           style={{ height: 180, background: "rgba(8,12,22,0.85)" }}
         >
           <img
-            src={flagUrl(flagCode, 1280)}
+            key={flagCode}
+            src={flagUrl(flagCode, 640)}
             alt=""
             style={{
               position: "absolute",

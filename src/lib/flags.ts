@@ -46,6 +46,21 @@ export function flagUrl(code: string, width: 320 | 640 | 1280 = 640): string {
 }
 
 /**
+ * 预加载一批国旗到浏览器缓存，让后续显示无延迟。
+ * 通过 new Image() 触发请求，不会阻塞页面渲染。
+ */
+export function preloadFlags(codes: string[], width: 320 | 640 | 1280 = 640): void {
+  if (typeof window === "undefined") return;
+  const seen = new Set<string>();
+  for (const code of codes) {
+    if (!code || seen.has(code)) continue;
+    seen.add(code);
+    const img = new Image();
+    img.src = flagUrl(code, width);
+  }
+}
+
+/**
  * 央行 → 国家 / 区域代码（用于央行卡国旗背景）
  */
 export const BANK_FLAG: Record<string, string> = {
