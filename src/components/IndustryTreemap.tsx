@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { hierarchy, treemap as d3treemap } from "d3-hierarchy";
 import type { HierarchyRectangularNode } from "d3-hierarchy";
-import { INDUSTRIES, type IndustryDef } from "../lib/industries";
+import { INDUSTRIES, getBoardEmoji, type IndustryDef } from "../lib/industries";
 import {
   fetchAllBoards,
   fetchBoardStocks,
@@ -341,6 +341,11 @@ function TreemapCell({
   const { bg, text, accent } = cellStyle(board.changePct, heat);
   const small = w < 70 || h < 50;
   const tiny = w < 45 || h < 35;
+  const industryIcon = node.parent?.data.industry?.icon;
+  const emoji = getBoardEmoji(board.name, industryIcon);
+  // emoji 大小：跟方格短边联动，最大 88、最小 18 才显示
+  const emojiSize = Math.min(Math.min(w, h) * 0.65, w * 0.45, 88);
+  const showEmoji = emojiSize >= 18;
 
   return (
     <button
@@ -379,6 +384,26 @@ function TreemapCell({
         e.currentTarget.style.zIndex = "auto";
       }}
     >
+      {/* 行业符号水印（emoji），定位在右下角溢出一点做"探出来"的视觉感 */}
+      {showEmoji && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            right: -emojiSize * 0.08,
+            bottom: -emojiSize * 0.1,
+            fontSize: emojiSize,
+            lineHeight: 1,
+            opacity: tiny ? 0.55 : 0.26,
+            pointerEvents: "none",
+            userSelect: "none",
+            filter: "saturate(1.1)",
+            zIndex: 0,
+          }}
+        >
+          {emoji}
+        </div>
+      )}
       {!tiny && (
         <div
           style={{
@@ -389,6 +414,8 @@ function TreemapCell({
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
             opacity: 0.95,
+            position: "relative",
+            zIndex: 1,
           }}
         >
           {board.name}
@@ -401,6 +428,8 @@ function TreemapCell({
             justifyContent: "space-between",
             alignItems: "flex-end",
             gap: 4,
+            position: "relative",
+            zIndex: 1,
           }}
         >
           <div
@@ -410,6 +439,7 @@ function TreemapCell({
               fontWeight: 700,
               color: accent,
               lineHeight: 1,
+              textShadow: "0 1px 2px rgba(0,0,0,0.5)",
             }}
           >
             {board.changePct > 0 ? "+" : ""}
@@ -419,11 +449,12 @@ function TreemapCell({
             style={{
               fontFamily: "ui-monospace,monospace",
               fontSize: 9,
-              opacity: 0.7,
+              opacity: 0.85,
               padding: "1px 5px",
               borderRadius: 3,
-              background: "rgba(0,0,0,0.25)",
+              background: "rgba(0,0,0,0.4)",
               whiteSpace: "nowrap",
+              backdropFilter: "blur(4px)",
             }}
           >
             热 {heat}
@@ -437,6 +468,9 @@ function TreemapCell({
             fontSize: 10,
             fontWeight: 700,
             color: accent,
+            position: "relative",
+            zIndex: 1,
+            textShadow: "0 1px 2px rgba(0,0,0,0.5)",
           }}
         >
           {board.changePct > 0 ? "+" : ""}
