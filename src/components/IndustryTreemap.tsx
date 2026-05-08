@@ -203,55 +203,99 @@ export default function IndustryTreemap() {
         )}
       </div>
 
-      {/* 选中板块的详情 */}
+      {/* 选中板块的详情 — 背景用对应行业封面图 */}
       {selected && (
-        <div className="glass p-5 animate-[fadeIn_0.2s_ease-out]">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-subtle">
-            <div>
-              <div className="text-xs text-cyan-accent font-mono tracking-wider mb-1">
-                SELECTED · {selected.kind === "concept" ? "概念板块" : "行业板块"}
-              </div>
-              <h3 className="text-2xl font-bold text-text-primary">
-                {selected.name}
-              </h3>
-              <div className="flex items-center gap-3 mt-2 text-sm">
-                <span
-                  className={`font-mono font-semibold ${
-                    selected.changePct > 0
-                      ? "text-rose-accent"
-                      : selected.changePct < 0
-                        ? "text-emerald-accent"
-                        : "text-text-secondary"
-                  }`}
+        <div
+          className="relative glass p-5 overflow-hidden animate-[fadeIn_0.2s_ease-out]"
+          key={selected.code}
+        >
+          {/* 背景图（与方格同源） */}
+          {getBoardImage(selected.name) && (
+            <img
+              src={getBoardImage(selected.name)!}
+              alt=""
+              loading="eager"
+              decoding="async"
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                opacity: 0.55,
+                pointerEvents: "none",
+                zIndex: 0,
+              }}
+            />
+          )}
+          {/* 暗色蒙层 — 保证文字读得清 */}
+          {getBoardImage(selected.name) && (
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "linear-gradient(135deg, rgba(13,18,32,0.92) 0%, rgba(13,18,32,0.78) 50%, rgba(13,18,32,0.62) 100%)",
+                pointerEvents: "none",
+                zIndex: 1,
+              }}
+            />
+          )}
+          {/* 内容层 */}
+          <div className="relative" style={{ zIndex: 2 }}>
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-subtle">
+              <div>
+                <div className="text-xs text-cyan-accent font-mono tracking-wider mb-1">
+                  SELECTED · {selected.kind === "concept" ? "概念板块" : "行业板块"}
+                </div>
+                <h3
+                  className="text-2xl font-bold text-text-primary"
+                  style={{ textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}
                 >
-                  {selected.changePct > 0 ? "+" : ""}
-                  {selected.changePct.toFixed(2)}%
-                </span>
-                <span
-                  className={`font-mono ${
-                    selected.netFlow > 0
-                      ? "text-rose-accent"
-                      : selected.netFlow < 0
-                        ? "text-emerald-accent"
-                        : "text-text-muted"
-                  }`}
-                >
-                  主力 {formatFlow(selected.netFlow)}
-                </span>
-                <span className="text-text-muted font-mono">
-                  热度 {calcHeatScore(selected)}
-                </span>
+                  {selected.name}
+                </h3>
+                <div className="flex items-center gap-3 mt-2 text-sm">
+                  <span
+                    className={`font-mono font-semibold ${
+                      selected.changePct > 0
+                        ? "text-rose-accent"
+                        : selected.changePct < 0
+                          ? "text-emerald-accent"
+                          : "text-text-secondary"
+                    }`}
+                    style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
+                  >
+                    {selected.changePct > 0 ? "+" : ""}
+                    {selected.changePct.toFixed(2)}%
+                  </span>
+                  <span
+                    className={`font-mono ${
+                      selected.netFlow > 0
+                        ? "text-rose-accent"
+                        : selected.netFlow < 0
+                          ? "text-emerald-accent"
+                          : "text-text-muted"
+                    }`}
+                    style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
+                  >
+                    主力 {formatFlow(selected.netFlow)}
+                  </span>
+                  <span className="text-text-muted font-mono">
+                    热度 {calcHeatScore(selected)}
+                  </span>
+                </div>
               </div>
+              <button
+                onClick={() => setSelected(null)}
+                className="w-8 h-8 rounded-full bg-bg-card/40 hover:bg-bg-card flex items-center justify-center text-text-muted hover:text-text-primary transition-colors backdrop-blur-sm"
+                aria-label="关闭"
+              >
+                ✕
+              </button>
             </div>
-            <button
-              onClick={() => setSelected(null)}
-              className="w-8 h-8 rounded-full hover:bg-bg-card flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
-              aria-label="关闭"
-            >
-              ✕
-            </button>
+            <ExpandedDetail board={selected} />
           </div>
-          <ExpandedDetail board={selected} />
         </div>
       )}
 
