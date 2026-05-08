@@ -161,12 +161,33 @@ async function handlePost(req: Request, env: Env, headers: HeadersInit): Promise
 
 /* --------------------------- 数据源代理 --------------------------- */
 
-const PROXY_TARGETS: Record<string, string> = {
-  em: "https://push2.eastmoney.com",
-  "em-search": "https://search-api-web.eastmoney.com",
-  cg: "https://api.coingecko.com",
-  er: "https://open.er-api.com",
-  rss: "https://api.rss2json.com",
+interface ProxyTarget {
+  host: string;
+  /** 模拟真实的页面 Referer，让上游觉得请求是从其官网发出（绕反爬） */
+  referer: string;
+}
+
+const PROXY_TARGETS: Record<string, ProxyTarget> = {
+  em: {
+    host: "https://push2.eastmoney.com",
+    referer: "https://quote.eastmoney.com/center/boardlist.html",
+  },
+  "em-search": {
+    host: "https://search-api-web.eastmoney.com",
+    referer: "https://www.eastmoney.com/",
+  },
+  cg: {
+    host: "https://api.coingecko.com",
+    referer: "https://www.coingecko.com/",
+  },
+  er: {
+    host: "https://open.er-api.com",
+    referer: "https://www.exchangerate-api.com/",
+  },
+  rss: {
+    host: "https://api.rss2json.com",
+    referer: "https://rss2json.com/",
+  },
 };
 
 /** 不同数据源的边缘缓存 TTL（秒）— 静态/慢变数据 TTL 更长 */
@@ -192,8 +213,7 @@ async function handleProxy(
   if (!target) return text("unknown service", corsBase, 404);
 
   const upstreamPath = segments.length > 2 ? "/" + segments.slice(2).join("/") : "/";
-  const upstreamUrl = target + upstreamPath + url.search;
-  const targetOrigin = new URL(target).origin;
+  const upstreamUrl = target.host + upstreamPath + url.search;
   const ttl = CACHE_TTL[service] ?? 15;
 
   // 用 upstream URL 作为缓存 key，多浏览器/多组件相同请求共用同一份
@@ -212,10 +232,10 @@ async function handleProxy(
     const upstream = await fetch(upstreamUrl, {
       method: "GET",
       headers: {
-        // 提供合理的 UA / Referer，避免被反爬关连接
+        // 模拟真实 Chrome + 上游官网 Referer，绕过反爬（EM 对纯 API host 的 Referer 会返 502）
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-        Referer: targetOrigin + "/",
+        Referer: target.referer,
         Accept: "*/*",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
       },
