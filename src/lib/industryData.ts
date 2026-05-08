@@ -38,22 +38,34 @@ function normalizeDiff(diff: unknown): RawDiff[] {
 
 async function fetchBoardList(kind: "concept" | "industry"): Promise<BoardQuote[]> {
   // m:90 t:2 = 行业板块；t:3 = 概念板块
+  // 服务端单页最多 100，需分页拉满（概念板块~486，行业板块~300）
   const t = kind === "concept" ? 3 : 2;
-  const url = `${PUSH}?fs=m:90+t:${t}&fields=f3,f6,f12,f14,f62&pn=1&pz=300&_=${Date.now()}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  const items = normalizeDiff(json?.data?.diff);
-  return items
-    .filter((it) => it.f12 && it.f14)
-    .map((it) => ({
-      code: it.f12 as string,
-      name: it.f14 as string,
-      changePct: typeof it.f3 === "number" ? it.f3 / 100 : 0,
-      netFlow: typeof it.f62 === "number" ? it.f62 : 0,
-      amount: typeof it.f6 === "number" ? it.f6 : undefined,
-      kind,
-    }));
+  const all: BoardQuote[] = [];
+  const PAGE_SIZE = 100;
+  const MAX_PAGES = 6; // 安全上限 600 条
+
+  for (let pn = 1; pn <= MAX_PAGES; pn++) {
+    const url = `${PUSH}?fs=m:90+t:${t}&fields=f3,f6,f12,f14,f62&pn=${pn}&pz=${PAGE_SIZE}&_=${Date.now()}`;
+    const res = await fetch(url);
+    if (!res.ok) break;
+    const json = await res.json();
+    const items = normalizeDiff(json?.data?.diff);
+    if (items.length === 0) break;
+    for (const it of items) {
+      if (!it.f12 || !it.f14) continue;
+      all.push({
+        code: it.f12 as string,
+        name: it.f14 as string,
+        changePct: typeof it.f3 === "number" ? it.f3 / 100 : 0,
+        netFlow: typeof it.f62 === "number" ? it.f62 : 0,
+        amount: typeof it.f6 === "number" ? it.f6 : undefined,
+        kind,
+      });
+    }
+    // 不足一页 = 已经到底
+    if (items.length < PAGE_SIZE) break;
+  }
+  return all;
 }
 
 export async function fetchAllBoards(): Promise<BoardQuote[]> {
@@ -70,9 +82,11 @@ export async function fetchAllBoards(): Promise<BoardQuote[]> {
 
 /**
  * 给定一个目标名称，从板块列表里找最匹配的一个
- * 1. 完全相等
- * 2. 包含关系
- * 3. 都没有 → null
+ * 优先级：
+ *   1. 完全相等
+ *   2. 双向包含（target ⊆ board.name 或 board.name ⊆ target），且要求 ≥3 字符
+ *   3. 多个候选时，按"长度差最小"排（避免 "半导体设备" 退化匹配到 "半导体"）
+ *   4. 一个也没有 → null
  */
 export function matchBoard(
   target: string,
@@ -80,10 +94,19 @@ export function matchBoard(
 ): BoardQuote | null {
   const exact = boards.find((b) => b.name === target);
   if (exact) return exact;
-  const contains = boards.find(
-    (b) => b.name.includes(target) || target.includes(b.name)
+  const MIN_TOKEN = 3;
+  const candidates = boards.filter((b) => {
+    const longer = b.name.length >= target.length ? b.name : target;
+    const shorter = b.name.length >= target.length ? target : b.name;
+    return shorter.length >= MIN_TOKEN && longer.includes(shorter);
+  });
+  if (candidates.length === 0) return null;
+  candidates.sort(
+    (a, b) =>
+      Math.abs(a.name.length - target.length) -
+      Math.abs(b.name.length - target.length)
   );
-  return contains ?? null;
+  return candidates[0];
 }
 
 export interface StockQuote {

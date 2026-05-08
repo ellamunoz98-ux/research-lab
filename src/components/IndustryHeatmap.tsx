@@ -55,15 +55,20 @@ export default function IndustryHeatmap() {
   // 把每个行业的子板块解析成 SubResult
   const industryRows = useMemo(() => {
     return INDUSTRIES.map((ind) => {
+      // 行业内同 board.code 只保留第一次出现，避免多个子板块名映射到同一板块
+      const claimedCodes = new Set<string>();
       const subs: SubResult[] = ind.subBoards.map((name) => {
         const b = matchBoard(name, boards);
+        if (b && claimedCodes.has(b.code)) {
+          return { defName: name, board: null, score: 0 };
+        }
+        if (b) claimedCodes.add(b.code);
         return {
           defName: name,
           board: b,
           score: b ? calcHeatScore(b) : 0,
         };
       });
-      // 行业级整体热度 = 已匹配子板块热度均值
       const matched = subs.filter((s) => s.board);
       const indScore = matched.length
         ? Math.round(
