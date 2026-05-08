@@ -36,30 +36,70 @@ interface Quote {
   changePct: number;
 }
 
-async function fetchOne(t: Ticker): Promise<Quote | null> {
-  try {
-    if (t.source === "eastmoney") {
+/**
+ * 一次性批量拉取：东方财富 12 个指数走 ulist.np/get（1 个请求），
+ * CoinGecko BTC/ETH 走批量 simple/price（1 个请求）。
+ * 14 个请求合并为 2 个，首屏速度提升 5-10 倍。
+ */
+async function fetchAll(): Promise<Map<string, Quote>> {
+  const result = new Map<string, Quote>();
+  const emTickers = TICKERS.filter((t) => t.source === "eastmoney");
+  const cgTickers = TICKERS.filter((t) => t.source === "coingecko");
+
+  // —— 东方财富批量（ulist.np 用 f2 最新价 / f3 涨跌幅，与单 stock/get 的 f43/f170 不同）
+  const emPromise = (async () => {
+    if (emTickers.length === 0) return;
+    const secids = emTickers.map((t) => t.symbol).join(",");
+    try {
       const r = await fetch(
         proxied(
-          `https://push2.eastmoney.com/api/qt/stock/get?secid=${t.symbol}&fields=f43,f170`
+          `https://push2.eastmoney.com/api/qt/ulist.np/get?secids=${secids}&fields=f2,f3,f12`
         )
       );
       const j = await r.json();
-      if (!j?.data) return null;
-      return { price: j.data.f43 / 100, changePct: j.data.f170 / 100 };
+      const diff = j?.data?.diff;
+      if (!diff) return;
+      const items = Array.isArray(diff) ? diff : Object.values(diff);
+      // ulist 保留请求顺序，按下标对应即可
+      items.forEach((it: { f2?: number; f3?: number }, i: number) => {
+        const t = emTickers[i];
+        if (!t || typeof it.f2 !== "number") return;
+        result.set(t.symbol, {
+          price: it.f2 / 100,
+          changePct: typeof it.f3 === "number" ? it.f3 / 100 : 0,
+        });
+      });
+    } catch {
+      /* swallow — 显示 — */
     }
-    const r = await fetch(
-      proxied(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${t.symbol}&vs_currencies=usd&include_24hr_change=true`
-      )
-    );
-    const j = await r.json();
-    const d = j?.[t.symbol];
-    if (!d) return null;
-    return { price: d.usd, changePct: d.usd_24h_change ?? 0 };
-  } catch {
-    return null;
-  }
+  })();
+
+  // —— CoinGecko 批量
+  const cgPromise = (async () => {
+    if (cgTickers.length === 0) return;
+    const ids = cgTickers.map((t) => t.symbol).join(",");
+    try {
+      const r = await fetch(
+        proxied(
+          `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`
+        )
+      );
+      const j = await r.json();
+      cgTickers.forEach((t) => {
+        const d = j?.[t.symbol];
+        if (!d) return;
+        result.set(t.symbol, {
+          price: d.usd,
+          changePct: d.usd_24h_change ?? 0,
+        });
+      });
+    } catch {
+      /* swallow */
+    }
+  })();
+
+  await Promise.all([emPromise, cgPromise]);
+  return result;
 }
 
 function formatPrice(value: number, decimals: number, prefix?: string) {
@@ -71,15 +111,13 @@ function formatPrice(value: number, decimals: number, prefix?: string) {
 }
 
 export default function MarketMarquee() {
-  const [quotes, setQuotes] = useState<(Quote | null)[]>(
-    TICKERS.map(() => null)
-  );
+  const [quotes, setQuotes] = useState<Map<string, Quote>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const results = await Promise.all(TICKERS.map(fetchOne));
-      if (!cancelled) setQuotes(results);
+      const m = await fetchAll();
+      if (!cancelled) setQuotes(m);
     }
     load();
     const id = setInterval(load, 30_000);
@@ -91,7 +129,7 @@ export default function MarketMarquee() {
 
   // 渲染单条 ticker 项
   const items = TICKERS.map((t, i) => {
-    const q = quotes[i];
+    const q = quotes.get(t.symbol) ?? null;
     const decimals = t.decimals ?? 2;
     const pct = q?.changePct ?? 0;
     const colorClass = q

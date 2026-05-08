@@ -623,28 +623,13 @@ function SidePanel({
 
   return (
     <div className="relative glass min-h-[400px] lg:min-h-[640px] lg:max-h-[640px] overflow-y-auto overflow-x-hidden">
-      {/* 顶部国旗横幅（占面板约 1/3 高度，融入卡片背景） */}
+      {/* 顶部国旗横幅（cover 铺满 + 蒙层融入卡片） */}
       {flagCode && (
         <div
-          className="relative h-[133px] lg:h-[213px] overflow-hidden"
+          className="relative h-[140px] lg:h-[213px] overflow-hidden"
           style={{ background: "#0a0f1a" }}
         >
-          {/* 模糊放大版本作为背景填满，避免空白 */}
-          <img
-            aria-hidden
-            src={flagUrl(flagCode, 640)}
-            alt=""
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              filter: "blur(28px) saturate(1.2) brightness(0.55)",
-              transform: "scale(1.15)",
-            }}
-          />
-          {/* 主体国旗（保持完整比例） */}
+          {/* 主国旗 cover 铺满，左右零空白 */}
           <img
             key={flagCode}
             src={flagUrl(flagCode, 640)}
@@ -654,11 +639,11 @@ function SidePanel({
               inset: 0,
               width: "100%",
               height: "100%",
-              objectFit: "contain",
-              filter: "saturate(0.95) contrast(1.02) drop-shadow(0 6px 18px rgba(0,0,0,0.4))",
+              objectFit: "cover",
+              filter: "saturate(0.95) contrast(1.03)",
             }}
           />
-          {/* 顶部细微微光 */}
+          {/* 顶部细微高光 */}
           <div
             aria-hidden
             style={{
@@ -672,7 +657,7 @@ function SidePanel({
               pointerEvents: "none",
             }}
           />
-          {/* 底部到卡片背景的过渡蒙层（让国旗"溶进"卡片，不再像贴纸） */}
+          {/* 底部到卡片背景的过渡蒙层 */}
           <div
             aria-hidden
             style={{
@@ -682,18 +667,18 @@ function SidePanel({
               bottom: 0,
               height: "55%",
               background:
-                "linear-gradient(180deg, rgba(13,18,32,0) 0%, rgba(13,18,32,0.55) 60%, rgba(13,18,32,0.92) 100%)",
+                "linear-gradient(180deg, rgba(13,18,32,0) 0%, rgba(13,18,32,0.55) 60%, rgba(13,18,32,0.95) 100%)",
               pointerEvents: "none",
             }}
           />
-          {/* 暗角内阴影，强化"窗口"质感 */}
+          {/* 暗角内阴影 */}
           <div
             aria-hidden
             style={{
               position: "absolute",
               inset: 0,
               boxShadow:
-                "inset 0 0 80px 10px rgba(0,0,0,0.45), inset 0 -1px 0 rgba(255,255,255,0.04)",
+                "inset 0 0 80px 10px rgba(0,0,0,0.45), inset 0 -1px 0 rgba(255,255,255,0.05)",
               pointerEvents: "none",
             }}
           />

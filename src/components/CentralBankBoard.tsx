@@ -56,14 +56,13 @@ function BankCard({
       onClick={onSelect}
       className={`relative overflow-hidden glass text-left bg-gradient-to-br ${ACCENT_GRADIENT[b.accent]} hover:scale-[1.02] hover:border-cyan-accent/50 transition-all flex flex-col`}
     >
-      {/* 顶部国旗横幅（融入卡片背景） */}
+      {/* 顶部国旗横幅（cover 铺满 + 蒙层融入卡片） */}
       <div
         className="relative shrink-0 overflow-hidden"
-        style={{ height: 84, background: "#0a0f1a" }}
+        style={{ height: 140, background: "#0a0f1a" }}
       >
-        {/* 模糊放大背景，填满区域避免空白 */}
+        {/* 主国旗 cover 铺满，左右零空白；上下少量裁切对横条纹国旗几乎无影响 */}
         <img
-          aria-hidden
           src={flagUrl(flagCode, 640)}
           alt=""
           loading="lazy"
@@ -74,27 +73,24 @@ function BankCard({
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            filter: "blur(22px) saturate(1.25) brightness(0.5)",
-            transform: "scale(1.18)",
+            filter: "saturate(0.95) contrast(1.03)",
           }}
         />
-        {/* 主体国旗（保持完整比例） */}
-        <img
-          src={flagUrl(flagCode, 640)}
-          alt=""
-          loading="lazy"
-          decoding="async"
+        {/* 顶部细微高光 */}
+        <div
+          aria-hidden
           style={{
             position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-            filter:
-              "saturate(0.95) contrast(1.02) drop-shadow(0 4px 14px rgba(0,0,0,0.5))",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 1,
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.4) 50%, transparent 100%)",
+            pointerEvents: "none",
           }}
         />
-        {/* 底部到卡片背景的过渡蒙层 */}
+        {/* 底部到卡片背景的过渡蒙层（让国旗"溶进"内容区） */}
         <div
           aria-hidden
           style={{
@@ -102,9 +98,23 @@ function BankCard({
             left: 0,
             right: 0,
             bottom: 0,
-            height: "70%",
+            height: "55%",
             background:
-              "linear-gradient(180deg, rgba(13,18,32,0) 0%, rgba(13,18,32,0.55) 55%, rgba(13,18,32,0.95) 100%)",
+              "linear-gradient(180deg, rgba(13,18,32,0) 0%, rgba(13,18,32,0.55) 60%, rgba(13,18,32,0.95) 100%)",
+            pointerEvents: "none",
+          }}
+        />
+        {/* 顶部细微暗化（让角标可读） */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "32%",
+            background:
+              "linear-gradient(180deg, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0) 100%)",
             pointerEvents: "none",
           }}
         />
@@ -115,15 +125,15 @@ function BankCard({
             position: "absolute",
             inset: 0,
             boxShadow:
-              "inset 0 0 60px 8px rgba(0,0,0,0.5), inset 0 -1px 0 rgba(255,255,255,0.04)",
+              "inset 0 0 60px 6px rgba(0,0,0,0.45), inset 0 -1px 0 rgba(255,255,255,0.05)",
             pointerEvents: "none",
           }}
         />
         {/* 顶部小角标：国家代码 + 决议状态 */}
         <div className="absolute top-2 left-2 right-2 flex items-start justify-between pointer-events-none z-10">
           <span
-            className="text-[10px] font-mono font-bold tracking-[0.18em] text-text-primary px-1.5 py-0.5 rounded bg-bg-base/65 backdrop-blur-sm"
-            style={{ textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}
+            className="text-[10px] font-mono font-bold tracking-[0.18em] text-text-primary px-1.5 py-0.5 rounded bg-bg-base/70 backdrop-blur-sm"
+            style={{ textShadow: "0 1px 2px rgba(0,0,0,0.7)" }}
           >
             {b.shortName.toUpperCase()}
           </span>
@@ -220,27 +230,12 @@ function BankDetailModal({
         className="relative max-w-4xl w-full glass overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 顶部国旗横幅（融入卡片） */}
+        {/* 顶部国旗横幅（cover 铺满 + 蒙层融入卡片） */}
         <div
           className="relative overflow-hidden"
           style={{ height: 180, background: "#0a0f1a" }}
         >
-          {/* 模糊放大背景 */}
-          <img
-            aria-hidden
-            src={flagUrl(flagCode, 640)}
-            alt=""
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              filter: "blur(28px) saturate(1.25) brightness(0.5)",
-              transform: "scale(1.15)",
-            }}
-          />
-          {/* 主体国旗 */}
+          {/* 主国旗 cover 铺满 */}
           <img
             key={flagCode}
             src={flagUrl(flagCode, 640)}
@@ -250,9 +245,8 @@ function BankDetailModal({
               inset: 0,
               width: "100%",
               height: "100%",
-              objectFit: "contain",
-              filter:
-                "saturate(0.95) contrast(1.02) drop-shadow(0 6px 18px rgba(0,0,0,0.45))",
+              objectFit: "cover",
+              filter: "saturate(0.95) contrast(1.03)",
             }}
           />
           {/* 顶部细微高光 */}
@@ -279,7 +273,7 @@ function BankDetailModal({
               bottom: 0,
               height: "55%",
               background:
-                "linear-gradient(180deg, rgba(13,18,32,0) 0%, rgba(13,18,32,0.55) 60%, rgba(13,18,32,0.92) 100%)",
+                "linear-gradient(180deg, rgba(13,18,32,0) 0%, rgba(13,18,32,0.55) 60%, rgba(13,18,32,0.95) 100%)",
               pointerEvents: "none",
             }}
           />
@@ -290,7 +284,7 @@ function BankDetailModal({
               position: "absolute",
               inset: 0,
               boxShadow:
-                "inset 0 0 80px 10px rgba(0,0,0,0.45), inset 0 -1px 0 rgba(255,255,255,0.04)",
+                "inset 0 0 80px 10px rgba(0,0,0,0.45), inset 0 -1px 0 rgba(255,255,255,0.05)",
               pointerEvents: "none",
             }}
           />
