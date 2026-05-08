@@ -48,7 +48,8 @@ export default function IndustryHeatmap() {
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 5 * 60 * 1000);
+    // 30 分钟刷新一次（数据源 Worker 端缓存 30 分钟，更频繁也只是 cache HIT）
+    const id = setInterval(load, 30 * 60 * 1000);
     return () => clearInterval(id);
   }, []);
 

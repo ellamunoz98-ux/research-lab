@@ -73,7 +73,8 @@ export default function IndustryTreemap() {
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 5 * 60 * 1000);
+    // 30 分钟刷新（Worker 端缓存 30 分钟，更频繁只是 cache HIT 浪费）
+    const id = setInterval(load, 30 * 60 * 1000);
     return () => clearInterval(id);
   }, []);
 

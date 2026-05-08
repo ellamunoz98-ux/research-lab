@@ -283,6 +283,115 @@ async function handleProxy(
   }
 }
 
+/* --------------------------- EM 板块聚合 --------------------------- */
+/**
+ * 一次返回所有活跃 EM 板块（行业 + 概念），绕开被反爬的 clist/get：
+ *   - 内置 BK 代码段（BK0420-0490 行业 + BK0500-1300 概念，约 870 个）
+ *   - 分批走 ulist.np（每批 200，5 个 subrequest）
+ *   - 上游响应里 f14 非空的就是真实存在的板块
+ *   - Worker 端缓存 30 分钟，多浏览器/多组件共用
+ */
+
+interface RawBoard {
+  f3?: number;
+  f12?: string;
+  f14?: string;
+  f62?: number;
+}
+
+async function handleEmBoards(
+  corsBase: HeadersInit,
+  ctx: ExecutionContext
+): Promise<Response> {
+  const cacheKey = new Request("https://em-boards-aggregate.local/v1", {
+    method: "GET",
+  });
+  const cache = caches.default;
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    const headers = new Headers(cached.headers);
+    Object.entries(corsBase).forEach(([k, v]) => headers.set(k, String(v)));
+    headers.set("x-cache", "HIT");
+    return new Response(cached.body, { status: cached.status, headers });
+  }
+
+  // 构造完整 BK 代码列表
+  const codes: string[] = [];
+  for (let i = 420; i <= 490; i++) {
+    codes.push(`90.BK${String(i).padStart(4, "0")}`);
+  }
+  for (let i = 500; i <= 1300; i++) {
+    codes.push(`90.BK${String(i).padStart(4, "0")}`);
+  }
+
+  // 分批批量拉
+  const BATCH = 180;
+  const all: RawBoard[] = [];
+  const headers = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    Referer: "https://quote.eastmoney.com/center/boardlist.html",
+    Accept: "*/*",
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+    Cookie:
+      "qgqp_b_id=ec6fa70a4c43e7a3ad06d8e2c0baf4ea; em_hq_fls=js",
+  };
+
+  const batches: string[][] = [];
+  for (let i = 0; i < codes.length; i += BATCH) {
+    batches.push(codes.slice(i, i + BATCH));
+  }
+
+  // 并行各批，提高首次填充速度
+  const results = await Promise.all(
+    batches.map(async (batch) => {
+      const url = `https://push2.eastmoney.com/api/qt/ulist.np/get?secids=${batch.join(",")}&fields=f3,f12,f14,f62`;
+      try {
+        const r = await fetch(url, { headers, redirect: "follow" });
+        if (!r.ok) return [] as RawBoard[];
+        const j = (await r.json()) as { data?: { diff?: unknown } };
+        const diff = j?.data?.diff;
+        if (Array.isArray(diff)) return diff as RawBoard[];
+        if (diff && typeof diff === "object")
+          return Object.values(diff as Record<string, RawBoard>);
+        return [];
+      } catch {
+        return [];
+      }
+    })
+  );
+  for (const r of results) all.push(...r);
+
+  // 过滤掉名字空的（无效 secid）
+  const boards = all.filter((b) => b.f12 && b.f14);
+
+  const body = JSON.stringify({
+    status: "ok",
+    fetchedAt: Date.now(),
+    count: boards.length,
+    boards,
+  });
+  const ttl = 1800; // 30 分钟
+  const toCache = new Response(body, {
+    status: 200,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": `public, max-age=${ttl}`,
+    },
+  });
+  ctx.waitUntil(cache.put(cacheKey, toCache));
+
+  return new Response(body, {
+    status: 200,
+    headers: {
+      ...corsBase,
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": `public, max-age=${ttl}`,
+      "x-cache": "MISS",
+    },
+  });
+}
+
 /* --------------------------- RSS 解析代理 --------------------------- */
 
 interface ParsedFeedItem {
@@ -472,6 +581,10 @@ export default {
 
     if (url.pathname === "/proxy/feed") {
       return handleFeedProxy(url, headers, ctx);
+    }
+
+    if (url.pathname === "/em/boards") {
+      return handleEmBoards(headers, ctx);
     }
 
     if (url.pathname.startsWith("/proxy/")) {

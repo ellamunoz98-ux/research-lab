@@ -38,48 +38,43 @@ function normalizeDiff(diff: unknown): RawDiff[] {
   return [];
 }
 
-async function fetchBoardList(kind: "concept" | "industry"): Promise<BoardQuote[]> {
-  // m:90 t:2 = 行业板块；t:3 = 概念板块
-  // 服务端单页最多 100，需分页拉满（概念板块~486，行业板块~300）
-  const t = kind === "concept" ? 3 : 2;
-  const all: BoardQuote[] = [];
-  const PAGE_SIZE = 100;
-  const MAX_PAGES = 6; // 安全上限 600 条
+/**
+ * 拉所有活跃 EM 板块。走自家 Worker 的 /em/boards 聚合端点：
+ *   - Worker 内部分批 ulist.np（绕开 clist/get 的 502 反爬）
+ *   - Worker 端缓存 30 分钟，多浏览器共用
+ *   - 一次请求拉到 ~500 个真实板块（行业 + 概念）
+ *
+ * BK 代码无法严格区分行业/概念（kind 字段统一标 "concept"，前端按板块名匹配即可）。
+ */
+const BOARDS_URL =
+  "https://research-lab-comments.ellamunoz98.workers.dev/em/boards";
 
-  for (let pn = 1; pn <= MAX_PAGES; pn++) {
-    const url = `${PUSH}?fs=m:90+t:${t}&fields=f3,f6,f12,f14,f62&pn=${pn}&pz=${PAGE_SIZE}&_=${Date.now()}`;
-    const res = await fetch(proxied(url));
-    if (!res.ok) break;
-    const json = await res.json();
-    const items = normalizeDiff(json?.data?.diff);
-    if (items.length === 0) break;
-    for (const it of items) {
-      if (!it.f12 || !it.f14) continue;
-      all.push({
-        code: it.f12 as string,
-        name: it.f14 as string,
-        changePct: typeof it.f3 === "number" ? it.f3 / 100 : 0,
-        netFlow: typeof it.f62 === "number" ? it.f62 : 0,
-        amount: typeof it.f6 === "number" ? it.f6 : undefined,
-        kind,
-      });
-    }
-    // 不足一页 = 已经到底
-    if (items.length < PAGE_SIZE) break;
-  }
-  return all;
+interface RawBoard {
+  f3?: number;
+  f12?: string;
+  f14?: string;
+  f62?: number;
 }
 
 export async function fetchAllBoards(): Promise<BoardQuote[]> {
-  const [concept, industry] = await Promise.all([
-    fetchBoardList("concept").catch(() => [] as BoardQuote[]),
-    fetchBoardList("industry").catch(() => [] as BoardQuote[]),
-  ]);
-  // 同名时优先用概念板块（粒度更细）
-  const map = new Map<string, BoardQuote>();
-  industry.forEach((b) => map.set(b.name, b));
-  concept.forEach((b) => map.set(b.name, b));
-  return Array.from(map.values());
+  try {
+    const res = await fetch(BOARDS_URL);
+    if (!res.ok) return [];
+    const json = (await res.json()) as { boards?: RawBoard[] };
+    const boards = json?.boards;
+    if (!Array.isArray(boards)) return [];
+    return boards
+      .filter((b) => b.f12 && b.f14)
+      .map((b) => ({
+        code: b.f12 as string,
+        name: b.f14 as string,
+        changePct: typeof b.f3 === "number" ? b.f3 / 100 : 0,
+        netFlow: typeof b.f62 === "number" ? b.f62 : 0,
+        kind: "concept" as const,
+      }));
+  } catch {
+    return [];
+  }
 }
 
 /**
