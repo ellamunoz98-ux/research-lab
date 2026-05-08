@@ -204,98 +204,134 @@ export default function IndustryTreemap() {
         )}
       </div>
 
-      {/* 选中板块的详情 — 背景用对应行业封面图 */}
+      {/* 选中板块的详情 — 顶部封面图 + 下方不透明文字区 */}
       {selected && (
         <div
-          className="relative glass p-5 overflow-hidden animate-[fadeIn_0.2s_ease-out]"
+          className="relative glass overflow-hidden animate-[fadeIn_0.2s_ease-out]"
           key={selected.code}
+          style={{ background: "#0a0f1a" }}
         >
-          {/* 背景图（与方格同源） */}
-          {getBoardImage(selected.name) && (
-            <img
-              src={getBoardImage(selected.name)!}
-              alt=""
-              loading="eager"
-              decoding="async"
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                opacity: 0.78,
-                pointerEvents: "none",
-                zIndex: 0,
-                filter: "saturate(1.1)",
-              }}
-            />
-          )}
-          {/* 暗色蒙层 — 保证文字读得清 */}
-          {getBoardImage(selected.name) && (
+          {/* 顶部封面区（170px）— 背景图 + 标题区，做"杂志封面"质感 */}
+          <div
+            className="relative"
+            style={{
+              height: 170,
+              overflow: "hidden",
+            }}
+          >
+            {getBoardImage(selected.name) && (
+              <img
+                src={getBoardImage(selected.name)!}
+                alt=""
+                loading="eager"
+                decoding="async"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  pointerEvents: "none",
+                  zIndex: 0,
+                  filter: "saturate(1.05) brightness(0.85)",
+                }}
+              />
+            )}
+            {/* 底部到深色的强烈渐变，让标题文字从图片"溶进"到下方内容区 */}
             <div
               aria-hidden="true"
               style={{
                 position: "absolute",
                 inset: 0,
                 background:
-                  "linear-gradient(135deg, rgba(13,18,32,0.65) 0%, rgba(13,18,32,0.45) 50%, rgba(13,18,32,0.28) 100%)",
+                  "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(10,15,26,0.55) 55%, rgba(10,15,26,0.95) 100%)",
                 pointerEvents: "none",
                 zIndex: 1,
               }}
             />
-          )}
-          {/* 内容层 */}
-          <div className="relative" style={{ zIndex: 2 }}>
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-subtle">
-              <div>
-                <div className="text-xs text-cyan-accent font-mono tracking-wider mb-1">
+            {/* 标题区（绝对定位在底部） */}
+            <div
+              className="absolute left-0 right-0 bottom-0 px-5 pb-4 flex items-end justify-between gap-3"
+              style={{ zIndex: 2 }}
+            >
+              <div className="min-w-0">
+                <div
+                  className="text-[10px] font-mono tracking-[0.25em] mb-1"
+                  style={{ color: "#22d3ee" }}
+                >
                   SELECTED · {selected.kind === "concept" ? "概念板块" : "行业板块"}
                 </div>
                 <h3
-                  className="text-2xl font-bold text-text-primary"
-                  style={{ textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}
+                  className="text-3xl font-bold mb-2 truncate"
+                  style={{
+                    color: "#ffffff",
+                    textShadow:
+                      "0 2px 6px rgba(0,0,0,0.95), 0 0 18px rgba(0,0,0,0.7)",
+                  }}
                 >
                   {selected.name}
                 </h3>
-                <div className="flex items-center gap-3 mt-2 text-sm">
+                <div className="flex items-center gap-3 text-sm flex-wrap">
                   <span
-                    className={`font-mono font-semibold ${
-                      selected.changePct > 0
-                        ? "text-rose-accent"
-                        : selected.changePct < 0
-                          ? "text-emerald-accent"
-                          : "text-text-secondary"
-                    }`}
-                    style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
+                    className="font-mono font-bold px-2 py-0.5 rounded"
+                    style={{
+                      color:
+                        selected.changePct > 0
+                          ? "#fb7185"
+                          : selected.changePct < 0
+                            ? "#10b981"
+                            : "#cbd5e1",
+                      background: "rgba(0,0,0,0.55)",
+                      backdropFilter: "blur(6px)",
+                      border:
+                        "1px solid " +
+                        (selected.changePct > 0
+                          ? "rgba(251,113,133,0.45)"
+                          : selected.changePct < 0
+                            ? "rgba(16,185,129,0.45)"
+                            : "rgba(203,213,225,0.3)"),
+                    }}
                   >
                     {selected.changePct > 0 ? "+" : ""}
                     {selected.changePct.toFixed(2)}%
                   </span>
                   <span
-                    className={`font-mono ${
-                      selected.netFlow > 0
-                        ? "text-rose-accent"
-                        : selected.netFlow < 0
-                          ? "text-emerald-accent"
-                          : "text-text-muted"
-                    }`}
-                    style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
+                    className="font-mono"
+                    style={{
+                      color:
+                        selected.netFlow > 0
+                          ? "#fb7185"
+                          : selected.netFlow < 0
+                            ? "#10b981"
+                            : "#ffffff",
+                      textShadow: "0 1px 3px rgba(0,0,0,0.9)",
+                      fontWeight: 600,
+                    }}
                   >
                     主力 {formatFlow(selected.netFlow)}
                   </span>
-                  <span className="text-text-muted font-mono">
+                  <span
+                    className="font-mono"
+                    style={{
+                      color: "#e2e8f0",
+                      textShadow: "0 1px 3px rgba(0,0,0,0.9)",
+                    }}
+                  >
                     热度 {calcHeatScore(selected)}
                   </span>
                 </div>
               </div>
               <button
                 onClick={() => setSelected(null)}
-                className="w-8 h-8 rounded-full bg-bg-card/40 hover:bg-bg-card flex items-center justify-center text-text-muted hover:text-text-primary transition-colors backdrop-blur-sm"
+                className="shrink-0 w-8 h-8 rounded-full bg-bg-base/70 hover:bg-bg-base flex items-center justify-center text-text-muted hover:text-text-primary transition-colors backdrop-blur-sm"
                 aria-label="关闭"
               >
                 ✕
               </button>
             </div>
+          </div>
+          {/* 下方内容区 — 不透明深底，所有文字纯白可读 */}
+          <div className="px-5 py-4" style={{ background: "#0a0f1a" }}>
             <ExpandedDetail board={selected} />
           </div>
         </div>
