@@ -222,9 +222,10 @@ export default function IndustryTreemap() {
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
-                opacity: 0.55,
+                opacity: 0.78,
                 pointerEvents: "none",
                 zIndex: 0,
+                filter: "saturate(1.1)",
               }}
             />
           )}
@@ -236,7 +237,7 @@ export default function IndustryTreemap() {
                 position: "absolute",
                 inset: 0,
                 background:
-                  "linear-gradient(135deg, rgba(13,18,32,0.92) 0%, rgba(13,18,32,0.78) 50%, rgba(13,18,32,0.62) 100%)",
+                  "linear-gradient(135deg, rgba(13,18,32,0.65) 0%, rgba(13,18,32,0.45) 50%, rgba(13,18,32,0.28) 100%)",
                 pointerEvents: "none",
                 zIndex: 1,
               }}
@@ -478,7 +479,7 @@ function TreemapCell({
             height: "100%",
             objectFit: "cover",
             // tiny 格子无文字，图片本身就是主视觉，给到接近不透明
-            opacity: imgLoaded ? (tiny ? 1 : small ? 0.92 : 0.82) : 0,
+            opacity: imgLoaded ? 1 : 0,
             transition: "opacity 0.4s ease-out",
             pointerEvents: "none",
             zIndex: 1,
@@ -493,8 +494,8 @@ function TreemapCell({
             position: "absolute",
             inset: 0,
             background: small
-              ? "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.10) 60%, rgba(0,0,0,0.25) 100%)"
-              : "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.30) 55%, rgba(0,0,0,0.50) 100%)",
+              ? "linear-gradient(to top, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.05) 60%, rgba(0,0,0,0.15) 100%)"
+              : "linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.10) 55%, rgba(0,0,0,0.28) 100%)",
             pointerEvents: "none",
             zIndex: 2,
           }}

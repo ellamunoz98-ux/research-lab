@@ -150,9 +150,10 @@ function PairCard({
           width: "50%",
           height: "100%",
           objectFit: "cover",
-          opacity: 0.18,
+          opacity: 0.5,
           pointerEvents: "none",
           zIndex: 0,
+          filter: "saturate(1.15)",
         }}
       />
       <img
@@ -167,9 +168,10 @@ function PairCard({
           width: "50%",
           height: "100%",
           objectFit: "cover",
-          opacity: 0.18,
+          opacity: 0.5,
           pointerEvents: "none",
           zIndex: 0,
+          filter: "saturate(1.15)",
         }}
       />
       {/* 暗色蒙层 */}
@@ -179,7 +181,7 @@ function PairCard({
           position: "absolute",
           inset: 0,
           background:
-            "linear-gradient(180deg, rgba(13,18,32,0.78) 0%, rgba(13,18,32,0.55) 50%, rgba(13,18,32,0.85) 100%)",
+            "linear-gradient(180deg, rgba(13,18,32,0.55) 0%, rgba(13,18,32,0.30) 50%, rgba(13,18,32,0.62) 100%)",
           pointerEvents: "none",
           zIndex: 1,
         }}
@@ -282,9 +284,10 @@ function ForexDetailModal({
             width: "50%",
             height: "100%",
             objectFit: "cover",
-            opacity: 0.22,
+            opacity: 0.55,
             pointerEvents: "none",
             zIndex: 0,
+            filter: "saturate(1.1)",
           }}
         />
         <img
@@ -297,9 +300,10 @@ function ForexDetailModal({
             width: "50%",
             height: "100%",
             objectFit: "cover",
-            opacity: 0.22,
+            opacity: 0.55,
             pointerEvents: "none",
             zIndex: 0,
+            filter: "saturate(1.1)",
           }}
         />
         <div
@@ -308,7 +312,7 @@ function ForexDetailModal({
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(135deg, rgba(13,18,32,0.92) 0%, rgba(13,18,32,0.78) 50%, rgba(13,18,32,0.65) 100%)",
+              "linear-gradient(135deg, rgba(13,18,32,0.65) 0%, rgba(13,18,32,0.48) 50%, rgba(13,18,32,0.32) 100%)",
             pointerEvents: "none",
             zIndex: 1,
           }}

@@ -63,10 +63,10 @@ function BankCard({
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          opacity: 0.16,
+          opacity: 0.5,
           pointerEvents: "none",
           zIndex: 0,
-          filter: "saturate(1.2)",
+          filter: "saturate(1.15)",
         }}
       />
       <div
@@ -75,7 +75,7 @@ function BankCard({
           position: "absolute",
           inset: 0,
           background:
-            "linear-gradient(120deg, rgba(13,18,32,0.78) 0%, rgba(13,18,32,0.45) 100%)",
+            "linear-gradient(120deg, rgba(13,18,32,0.55) 0%, rgba(13,18,32,0.22) 100%)",
           pointerEvents: "none",
           zIndex: 1,
         }}
@@ -188,9 +188,10 @@ function BankDetailModal({
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            opacity: 0.18,
+            opacity: 0.5,
             pointerEvents: "none",
             zIndex: 0,
+            filter: "saturate(1.1)",
           }}
         />
         <div
@@ -199,7 +200,7 @@ function BankDetailModal({
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(135deg, rgba(13,18,32,0.92) 0%, rgba(13,18,32,0.78) 50%, rgba(13,18,32,0.65) 100%)",
+              "linear-gradient(135deg, rgba(13,18,32,0.65) 0%, rgba(13,18,32,0.48) 50%, rgba(13,18,32,0.32) 100%)",
             pointerEvents: "none",
             zIndex: 1,
           }}

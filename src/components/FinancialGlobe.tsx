@@ -627,9 +627,10 @@ function SidePanel({
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              opacity: 0.18,
+              opacity: 0.55,
               pointerEvents: "none",
               zIndex: 0,
+              filter: "saturate(1.1)",
             }}
           />
           <div
@@ -638,7 +639,7 @@ function SidePanel({
               position: "absolute",
               inset: 0,
               background:
-                "linear-gradient(160deg, rgba(13,18,32,0.92) 0%, rgba(13,18,32,0.78) 50%, rgba(13,18,32,0.65) 100%)",
+                "linear-gradient(160deg, rgba(13,18,32,0.62) 0%, rgba(13,18,32,0.45) 50%, rgba(13,18,32,0.32) 100%)",
               pointerEvents: "none",
               zIndex: 1,
             }}
