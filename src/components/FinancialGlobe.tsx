@@ -614,10 +614,16 @@ function SidePanel({
   const flagCode = CENTER_FLAG_CODE[center.id] ?? null;
 
   return (
-    <div className="relative glass p-5 min-h-[400px] lg:min-h-[640px] lg:max-h-[640px] overflow-y-auto overflow-x-hidden">
-      {/* 国家国旗背景 */}
+    <div className="relative glass min-h-[400px] lg:min-h-[640px] lg:max-h-[640px] overflow-y-auto overflow-x-hidden">
+      {/* 顶部国旗横幅（约 1/4 高度，完整显示） */}
       {flagCode && (
-        <>
+        <div
+          className="relative"
+          style={{
+            height: 140,
+            background: "rgba(8,12,22,0.85)",
+          }}
+        >
           <img
             src={flagUrl(flagCode, 1280)}
             alt=""
@@ -626,48 +632,40 @@ function SidePanel({
               inset: 0,
               width: "100%",
               height: "100%",
-              objectFit: "cover",
-              opacity: 0.55,
-              pointerEvents: "none",
-              zIndex: 0,
+              objectFit: "contain",
               filter: "saturate(1.1)",
             }}
           />
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "linear-gradient(160deg, rgba(13,18,32,0.62) 0%, rgba(13,18,32,0.45) 50%, rgba(13,18,32,0.32) 100%)",
-              pointerEvents: "none",
-              zIndex: 1,
-            }}
-          />
-        </>
+          <button
+            onClick={onClose}
+            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-bg-base/65 hover:bg-bg-base flex items-center justify-center text-text-muted hover:text-text-primary text-sm transition-colors backdrop-blur-sm"
+            aria-label="关闭"
+          >
+            ✕
+          </button>
+        </div>
       )}
 
-      <div className="relative" style={{ zIndex: 2 }}>
+      <div className="p-5">
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="text-3xl mb-1">{center.flag}</div>
-          <h3
-            className="text-xl font-bold text-text-primary leading-tight"
-            style={{ textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
-          >
+          <h3 className="text-xl font-bold text-text-primary leading-tight">
             {center.name}
           </h3>
           <div className="text-xs text-text-muted font-mono mt-0.5">
             {center.city} · {center.country}
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="w-7 h-7 rounded-full bg-bg-card/50 hover:bg-bg-card flex items-center justify-center text-text-muted hover:text-text-primary text-sm transition-colors backdrop-blur-sm"
-          aria-label="关闭"
-        >
-          ✕
-        </button>
+        {!flagCode && (
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-full bg-bg-card/50 hover:bg-bg-card flex items-center justify-center text-text-muted hover:text-text-primary text-sm transition-colors backdrop-blur-sm"
+            aria-label="关闭"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {/* 状态徽章 */}

@@ -49,60 +49,57 @@ function BankCard({
   return (
     <button
       onClick={onSelect}
-      className={`relative overflow-hidden glass p-5 text-left bg-gradient-to-br ${ACCENT_GRADIENT[b.accent]} hover:scale-[1.02] hover:border-cyan-accent/50 transition-all`}
+      className={`relative overflow-hidden glass text-left bg-gradient-to-br ${ACCENT_GRADIENT[b.accent]} hover:scale-[1.02] hover:border-cyan-accent/50 transition-all flex flex-col`}
     >
-      {/* 国旗背景 */}
-      <img
-        src={flagUrl(flagCode, 640)}
-        alt=""
-        loading="lazy"
-        decoding="async"
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          opacity: 0.5,
-          pointerEvents: "none",
-          zIndex: 0,
-          filter: "saturate(1.15)",
-        }}
-      />
+      {/* 顶部国旗横幅（约 1/4 卡片高度，完整显示） */}
       <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(120deg, rgba(13,18,32,0.55) 0%, rgba(13,18,32,0.22) 100%)",
-          pointerEvents: "none",
-          zIndex: 1,
-        }}
-      />
-
-      <div className="relative" style={{ zIndex: 2 }}>
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <div className="text-2xl mb-1">{b.flag}</div>
-            <div className="text-text-primary font-semibold">{b.name}</div>
-            <div className="text-[10px] text-text-muted font-mono">
-              {b.shortName}
-            </div>
-          </div>
+        className="relative shrink-0"
+        style={{ height: 80, background: "rgba(8,12,22,0.65)" }}
+      >
+        <img
+          src={flagUrl(flagCode, 640)}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            filter: "saturate(1.15)",
+          }}
+        />
+        {/* 顶部小角标：国家代码 + 决议状态 */}
+        <div className="absolute top-2 left-2 right-2 flex items-start justify-between pointer-events-none">
           <span
-            className={`text-[10px] px-1.5 py-0.5 rounded border whitespace-nowrap ${ACTION_COLOR[b.lastAction]}`}
+            className="text-[10px] font-mono font-bold tracking-[0.18em] text-text-primary px-1.5 py-0.5 rounded bg-bg-base/65 backdrop-blur-sm"
+            style={{ textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}
+          >
+            {b.shortName.toUpperCase()}
+          </span>
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded border whitespace-nowrap ${ACTION_COLOR[b.lastAction]} backdrop-blur-sm`}
           >
             {b.lastAction}
             {diffBp !== 0 && ` ${diffBp > 0 ? "+" : ""}${diffBp}bp`}
           </span>
         </div>
+      </div>
+
+      {/* 内容区 */}
+      <div className="p-5 flex-1">
+        <div className="flex items-end justify-between mb-2">
+          <div>
+            <div className="text-text-primary font-semibold">{b.name}</div>
+            <div className="text-[10px] text-text-muted font-mono">
+              {b.shortName}
+            </div>
+          </div>
+        </div>
 
         <div className="text-xs text-text-muted mb-1">{b.rateName}</div>
-        <div
-          className="text-3xl font-bold text-text-primary tabular mb-3"
-          style={{ textShadow: "0 2px 6px rgba(0,0,0,0.4)" }}
-        >
+        <div className="text-3xl font-bold text-text-primary tabular mb-3">
           {b.rate.toFixed(2)}
           <span className="text-sm text-text-secondary ml-0.5">%</span>
         </div>
@@ -122,10 +119,6 @@ function BankCard({
               {b.governor}
             </span>
           </div>
-        </div>
-
-        <div className="mt-3 pt-3 border-t border-border-subtle text-[10px] text-cyan-accent/80 font-mono opacity-0 group-hover:opacity-100 transition-opacity">
-          点击查看叙事 →
         </div>
       </div>
     </button>
@@ -178,44 +171,47 @@ function BankDetailModal({
         className="relative max-w-4xl w-full glass overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 国旗背景 */}
-        <img
-          src={flagUrl(flagCode, 1280)}
-          alt=""
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            opacity: 0.5,
-            pointerEvents: "none",
-            zIndex: 0,
-            filter: "saturate(1.1)",
-          }}
-        />
+        {/* 顶部国旗横幅 */}
         <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(135deg, rgba(13,18,32,0.65) 0%, rgba(13,18,32,0.48) 50%, rgba(13,18,32,0.32) 100%)",
-            pointerEvents: "none",
-            zIndex: 1,
-          }}
-        />
-
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-bg-card/60 hover:bg-bg-card flex items-center justify-center text-text-muted hover:text-text-primary transition-colors backdrop-blur-sm"
-          style={{ zIndex: 10 }}
-          aria-label="关闭"
+          className="relative"
+          style={{ height: 180, background: "rgba(8,12,22,0.85)" }}
         >
-          ✕
-        </button>
+          <img
+            src={flagUrl(flagCode, 1280)}
+            alt=""
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              filter: "saturate(1.1)",
+            }}
+          />
+          {/* 底部渐变让标题区平滑过渡 */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: "30%",
+              background:
+                "linear-gradient(to bottom, transparent 0%, rgba(13,18,32,0.85) 100%)",
+              pointerEvents: "none",
+            }}
+          />
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-bg-base/70 hover:bg-bg-base flex items-center justify-center text-text-muted hover:text-text-primary transition-colors backdrop-blur-sm"
+            aria-label="关闭"
+          >
+            ✕
+          </button>
+        </div>
 
-        <div className="relative p-8" style={{ zIndex: 2 }}>
+        <div className="p-8">
           {/* Header */}
           <div className="flex items-start gap-4 mb-6 pb-5 border-b border-border-subtle">
             <div className="text-5xl">{b.flag}</div>
@@ -223,10 +219,7 @@ function BankDetailModal({
               <div className="text-xs text-cyan-accent tracking-[0.3em] font-mono mb-1">
                 {b.shortName}
               </div>
-              <h2
-                className="text-3xl font-bold text-text-primary"
-                style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
-              >
+              <h2 className="text-3xl font-bold text-text-primary">
                 {b.name}
               </h2>
               <div className="text-sm text-text-secondary mt-1">

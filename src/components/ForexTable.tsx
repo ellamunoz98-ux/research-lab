@@ -133,78 +133,68 @@ function PairCard({
   return (
     <button
       onClick={onClick}
-      className={`relative overflow-hidden glass p-4 text-left hover:scale-[1.02] hover:border-cyan-accent/50 transition-all ${
+      className={`relative overflow-hidden glass text-left hover:scale-[1.02] hover:border-cyan-accent/50 transition-all flex flex-col ${
         p.highlight ? "border-cyan-accent/30" : ""
       }`}
     >
-      {/* 双国旗背景：左半边 base 国旗，右半边 quote 国旗 */}
-      <img
-        src={flagUrl(p.base, 320)}
-        alt=""
-        loading="lazy"
-        decoding="async"
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          width: "50%",
-          height: "100%",
-          objectFit: "cover",
-          opacity: 0.5,
-          pointerEvents: "none",
-          zIndex: 0,
-          filter: "saturate(1.15)",
-        }}
-      />
-      <img
-        src={flagUrl(p.quote, 320)}
-        alt=""
-        loading="lazy"
-        decoding="async"
-        style={{
-          position: "absolute",
-          right: 0,
-          top: 0,
-          width: "50%",
-          height: "100%",
-          objectFit: "cover",
-          opacity: 0.5,
-          pointerEvents: "none",
-          zIndex: 0,
-          filter: "saturate(1.15)",
-        }}
-      />
-      {/* 暗色蒙层 */}
+      {/* 顶部双国旗横幅（base | quote） */}
       <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(180deg, rgba(13,18,32,0.55) 0%, rgba(13,18,32,0.30) 50%, rgba(13,18,32,0.62) 100%)",
-          pointerEvents: "none",
-          zIndex: 1,
-        }}
-      />
+        className="relative shrink-0 flex"
+        style={{ height: 60, background: "rgba(8,12,22,0.7)" }}
+      >
+        <div
+          className="relative flex-1 border-r border-border-subtle/50"
+          style={{ background: "rgba(8,12,22,0.5)" }}
+        >
+          <img
+            src={flagUrl(p.base, 320)}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              filter: "saturate(1.15)",
+            }}
+          />
+        </div>
+        <div
+          className="relative flex-1"
+          style={{ background: "rgba(8,12,22,0.5)" }}
+        >
+          <img
+            src={flagUrl(p.quote, 320)}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              filter: "saturate(1.15)",
+            }}
+          />
+        </div>
+        {p.highlight && (
+          <span className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 rounded bg-cyan-accent/15 text-cyan-accent border border-cyan-accent/30 backdrop-blur-sm">
+            主要
+          </span>
+        )}
+      </div>
 
-      <div className="relative" style={{ zIndex: 2 }}>
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-text-secondary text-xs font-mono flex items-center gap-1.5">
-            <span className="text-base">{p.flag[0]}</span>
-            <span className="text-text-muted">→</span>
-            <span className="text-base">{p.flag[1]}</span>
-          </div>
-          {p.highlight && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-accent/10 text-cyan-accent border border-cyan-accent/30">
-              主要
-            </span>
-          )}
+      <div className="p-4 flex-1">
+        <div className="flex items-center gap-1.5 mb-1.5 text-xs text-text-secondary font-mono">
+          <span>{p.base}</span>
+          <span className="text-text-muted">→</span>
+          <span>{p.quote}</span>
         </div>
         <div className="text-xs text-text-muted mb-1">{p.label}</div>
-        <div
-          className="text-2xl tabular text-text-primary font-semibold"
-          style={{ textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
-        >
+        <div className="text-2xl tabular text-text-primary font-semibold">
           {p.rate != null ? (
             p.rate.toLocaleString(undefined, {
               minimumFractionDigits: p.rate > 100 ? 2 : 4,
@@ -273,61 +263,72 @@ function ForexDetailModal({
         className="relative max-w-3xl w-full glass overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 双国旗背景 */}
-        <img
-          src={flagUrl(pair.base, 1280)}
-          alt=""
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: "50%",
-            height: "100%",
-            objectFit: "cover",
-            opacity: 0.55,
-            pointerEvents: "none",
-            zIndex: 0,
-            filter: "saturate(1.1)",
-          }}
-        />
-        <img
-          src={flagUrl(pair.quote, 1280)}
-          alt=""
-          style={{
-            position: "absolute",
-            right: 0,
-            top: 0,
-            width: "50%",
-            height: "100%",
-            objectFit: "cover",
-            opacity: 0.55,
-            pointerEvents: "none",
-            zIndex: 0,
-            filter: "saturate(1.1)",
-          }}
-        />
+        {/* 顶部双国旗横幅 */}
         <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(135deg, rgba(13,18,32,0.65) 0%, rgba(13,18,32,0.48) 50%, rgba(13,18,32,0.32) 100%)",
-            pointerEvents: "none",
-            zIndex: 1,
-          }}
-        />
-
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-bg-card/60 hover:bg-bg-card flex items-center justify-center text-text-muted hover:text-text-primary transition-colors backdrop-blur-sm"
-          style={{ zIndex: 10 }}
-          aria-label="关闭"
+          className="relative flex"
+          style={{ height: 160, background: "rgba(8,12,22,0.85)" }}
         >
-          ✕
-        </button>
+          <div className="relative flex-1 border-r border-border-subtle/40">
+            <img
+              src={flagUrl(pair.base, 1280)}
+              alt=""
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                filter: "saturate(1.1)",
+              }}
+            />
+            <span
+              className="absolute bottom-2 left-2 text-[10px] font-mono font-bold tracking-[0.18em] text-text-primary px-1.5 py-0.5 rounded bg-bg-base/65 backdrop-blur-sm"
+            >
+              {pair.base}
+            </span>
+          </div>
+          <div className="relative flex-1">
+            <img
+              src={flagUrl(pair.quote, 1280)}
+              alt=""
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                filter: "saturate(1.1)",
+              }}
+            />
+            <span
+              className="absolute bottom-2 right-2 text-[10px] font-mono font-bold tracking-[0.18em] text-text-primary px-1.5 py-0.5 rounded bg-bg-base/65 backdrop-blur-sm"
+            >
+              {pair.quote}
+            </span>
+          </div>
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: "30%",
+              background:
+                "linear-gradient(to bottom, transparent 0%, rgba(13,18,32,0.85) 100%)",
+              pointerEvents: "none",
+            }}
+          />
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-bg-base/70 hover:bg-bg-base flex items-center justify-center text-text-muted hover:text-text-primary transition-colors backdrop-blur-sm"
+            aria-label="关闭"
+          >
+            ✕
+          </button>
+        </div>
 
-        <div className="relative p-8" style={{ zIndex: 2 }}>
+        <div className="p-8">
           {/* Header */}
           <div className="flex items-start gap-4 mb-6 pb-5 border-b border-border-subtle">
             <div className="text-4xl">
@@ -337,10 +338,7 @@ function ForexDetailModal({
               <div className="text-xs text-cyan-accent tracking-[0.3em] font-mono mb-1">
                 FX PAIR · {pair.base}/{pair.quote}
               </div>
-              <h2
-                className="text-3xl font-bold text-text-primary"
-                style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
-              >
+              <h2 className="text-3xl font-bold text-text-primary">
                 {pair.label}
               </h2>
               <div className="text-sm text-text-secondary mt-1">
