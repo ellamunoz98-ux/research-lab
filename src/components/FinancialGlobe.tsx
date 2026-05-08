@@ -623,15 +623,28 @@ function SidePanel({
 
   return (
     <div className="relative glass min-h-[400px] lg:min-h-[640px] lg:max-h-[640px] overflow-y-auto overflow-x-hidden">
-      {/* 顶部国旗横幅（约 1/4 高度，完整显示） */}
+      {/* 顶部国旗横幅（占面板约 1/3 高度，融入卡片背景） */}
       {flagCode && (
         <div
-          className="relative"
-          style={{
-            height: 140,
-            background: "rgba(8,12,22,0.85)",
-          }}
+          className="relative h-[133px] lg:h-[213px] overflow-hidden"
+          style={{ background: "#0a0f1a" }}
         >
+          {/* 模糊放大版本作为背景填满，避免空白 */}
+          <img
+            aria-hidden
+            src={flagUrl(flagCode, 640)}
+            alt=""
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              filter: "blur(28px) saturate(1.2) brightness(0.55)",
+              transform: "scale(1.15)",
+            }}
+          />
+          {/* 主体国旗（保持完整比例） */}
           <img
             key={flagCode}
             src={flagUrl(flagCode, 640)}
@@ -642,12 +655,51 @@ function SidePanel({
               width: "100%",
               height: "100%",
               objectFit: "contain",
-              filter: "saturate(1.1)",
+              filter: "saturate(0.95) contrast(1.02) drop-shadow(0 6px 18px rgba(0,0,0,0.4))",
+            }}
+          />
+          {/* 顶部细微微光 */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              background:
+                "linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.45) 50%, transparent 100%)",
+              pointerEvents: "none",
+            }}
+          />
+          {/* 底部到卡片背景的过渡蒙层（让国旗"溶进"卡片，不再像贴纸） */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: "55%",
+              background:
+                "linear-gradient(180deg, rgba(13,18,32,0) 0%, rgba(13,18,32,0.55) 60%, rgba(13,18,32,0.92) 100%)",
+              pointerEvents: "none",
+            }}
+          />
+          {/* 暗角内阴影，强化"窗口"质感 */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              boxShadow:
+                "inset 0 0 80px 10px rgba(0,0,0,0.45), inset 0 -1px 0 rgba(255,255,255,0.04)",
+              pointerEvents: "none",
             }}
           />
           <button
             onClick={onClose}
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-bg-base/65 hover:bg-bg-base flex items-center justify-center text-text-muted hover:text-text-primary text-sm transition-colors backdrop-blur-sm"
+            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-bg-base/65 hover:bg-bg-base flex items-center justify-center text-text-muted hover:text-text-primary text-sm transition-colors backdrop-blur-sm z-10"
             aria-label="关闭"
           >
             ✕

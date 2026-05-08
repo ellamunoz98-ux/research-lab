@@ -1,15 +1,22 @@
 /**
- * Research.Lab 评论系统后端
+ * Research.Lab 评论系统后端 + 数据源代理
  * 基于 Cloudflare Workers + KV 存储
  *
- * 端点：
+ * 评论端点：
  *   GET  /comments?path=<page>     列出某页评论
  *   POST /comments                 新增评论 { path, name, role?, email?, body }
  *   DELETE /comments/<id>?path=<>  删除评论（仅站长，需 X-Admin-Token）
  *   GET  /health                   健康检查
  *
+ * 数据代理（绕过浏览器 CORS / Referer 反爬）：
+ *   GET  /proxy/em/<path>          → push2.eastmoney.com
+ *   GET  /proxy/em-search/<path>   → search-api-web.eastmoney.com
+ *   GET  /proxy/cg/<path>          → api.coingecko.com
+ *   GET  /proxy/er/<path>          → open.er-api.com
+ *   GET  /proxy/rss/<path>         → api.rss2json.com
+ *
  * 防滥用：
- *   - 每 IP 每分钟最多 5 条
+ *   - 每 IP 每分钟最多 5 条评论
  *   - 名字 ≤ 30 字，正文 ≤ 2000 字
  *   - 简单关键词黑名单（可扩展）
  */
@@ -152,6 +159,68 @@ async function handlePost(req: Request, env: Env, headers: HeadersInit): Promise
   return json(publicForm(comment), headers, 201);
 }
 
+/* --------------------------- 数据源代理 --------------------------- */
+
+const PROXY_TARGETS: Record<string, string> = {
+  em: "https://push2.eastmoney.com",
+  "em-search": "https://search-api-web.eastmoney.com",
+  cg: "https://api.coingecko.com",
+  er: "https://open.er-api.com",
+  rss: "https://api.rss2json.com",
+};
+
+async function handleProxy(
+  req: Request,
+  url: URL,
+  corsBase: HeadersInit
+): Promise<Response> {
+  // /proxy/<service>/<...rest>
+  const segments = url.pathname.split("/").filter(Boolean);
+  if (segments.length < 2) return text("missing service", corsBase, 400);
+  const service = segments[1];
+  const target = PROXY_TARGETS[service];
+  if (!target) return text("unknown service", corsBase, 404);
+
+  const upstreamPath = segments.length > 2 ? "/" + segments.slice(2).join("/") : "/";
+  const upstreamUrl = target + upstreamPath + url.search;
+  const targetOrigin = new URL(target).origin;
+
+  try {
+    const upstream = await fetch(upstreamUrl, {
+      method: "GET",
+      headers: {
+        // 提供合理的 UA / Referer，避免被反爬关连接
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        Referer: targetOrigin + "/",
+        Accept: "*/*",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+      },
+      redirect: "follow",
+      cf: { cacheTtl: 15, cacheEverything: true } as RequestInitCfProperties,
+    });
+    const body = await upstream.arrayBuffer();
+    const contentType =
+      upstream.headers.get("content-type") || "application/json; charset=utf-8";
+    return new Response(body, {
+      status: upstream.status,
+      headers: {
+        ...corsBase,
+        "content-type": contentType,
+        "cache-control": "public, max-age=15",
+      },
+    });
+  } catch (e) {
+    return text(
+      `proxy error: ${e instanceof Error ? e.message : String(e)}`,
+      corsBase,
+      502
+    );
+  }
+}
+
+/* ----------------------------- /数据源代理 ----------------------------- */
+
 async function handleDelete(req: Request, env: Env, headers: HeadersInit): Promise<Response> {
   if (!env.ADMIN_TOKEN) return text("admin token not configured", headers, 503);
   const provided = req.headers.get("X-Admin-Token") ?? "";
@@ -180,6 +249,10 @@ export default {
 
     if (url.pathname === "/health") {
       return json({ ok: true, time: Date.now() }, headers);
+    }
+
+    if (url.pathname.startsWith("/proxy/")) {
+      return handleProxy(req, url, headers);
     }
 
     if (url.pathname === "/comments") {

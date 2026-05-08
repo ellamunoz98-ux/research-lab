@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { proxied } from "../lib/proxy";
 
 /**
  * 国际金融时事 / 资讯快线
@@ -83,7 +84,7 @@ type CategoryFilter = (typeof CATEGORIES)[number]["id"];
 
 async function fetchSource(s: FeedSource): Promise<NewsItem[]> {
   const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(s.rss)}`;
-  const res = await fetch(url);
+  const res = await fetch(proxied(url));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   if (json.status !== "ok" || !Array.isArray(json.items)) {

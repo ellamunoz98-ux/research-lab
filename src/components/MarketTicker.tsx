@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
+import { proxied } from "../lib/proxy";
 
 /**
  * 实时市场行情浮卡（首页 Hero）
@@ -79,7 +80,7 @@ interface Quote {
 
 async function fetchEastMoney(secid: string): Promise<Quote> {
   const url = `https://push2.eastmoney.com/api/qt/stock/get?secid=${secid}&fields=f43,f58,f169,f170`;
-  const res = await fetch(url);
+  const res = await fetch(proxied(url));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   if (!json?.data) throw new Error("无数据");
@@ -94,7 +95,7 @@ async function fetchEastMoney(secid: string): Promise<Quote> {
 
 async function fetchCoinGecko(id: string): Promise<Quote> {
   const url = `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`;
-  const res = await fetch(url);
+  const res = await fetch(proxied(url));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   const data = json?.[id];

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { proxied } from "../lib/proxy";
 
 /**
  * 顶部滚动行情条（marquee）
@@ -39,14 +40,18 @@ async function fetchOne(t: Ticker): Promise<Quote | null> {
   try {
     if (t.source === "eastmoney") {
       const r = await fetch(
-        `https://push2.eastmoney.com/api/qt/stock/get?secid=${t.symbol}&fields=f43,f170`
+        proxied(
+          `https://push2.eastmoney.com/api/qt/stock/get?secid=${t.symbol}&fields=f43,f170`
+        )
       );
       const j = await r.json();
       if (!j?.data) return null;
       return { price: j.data.f43 / 100, changePct: j.data.f170 / 100 };
     }
     const r = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${t.symbol}&vs_currencies=usd&include_24hr_change=true`
+      proxied(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${t.symbol}&vs_currencies=usd&include_24hr_change=true`
+      )
     );
     const j = await r.json();
     const d = j?.[t.symbol];

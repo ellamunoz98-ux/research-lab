@@ -19,6 +19,6 @@
 2. 重命名为对应 slug
 3. 放进本目录
 4. `git add public/industries/*.jpg && git commit && git push`
-5. Netlify 重新部署后页面自动显示
+5. Cloudflare Pages 重新部署后页面自动显示
 
 未提供图的板块会自动 fallback 到 emoji 水印，不会报错。

@@ -6,6 +6,8 @@
  *   - er-api currency code (USD / EUR 等，由组件转换)
  */
 
+import { proxied } from "./proxy";
+
 export interface IndexQuote {
   /** 东方财富 secid（A股/港股/美股/日股/欧股/部分商品） */
   secid?: string;
@@ -290,7 +292,7 @@ export interface QuoteData {
 
 export async function fetchEastMoneyQuote(secid: string): Promise<QuoteData> {
   const url = `https://push2.eastmoney.com/api/qt/stock/get?secid=${secid}&fields=f43,f58,f169,f170`;
-  const res = await fetch(url);
+  const res = await fetch(proxied(url));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   if (!json?.data) throw new Error("无数据");
@@ -305,7 +307,7 @@ export async function fetchEastMoneyQuote(secid: string): Promise<QuoteData> {
 
 export async function fetchCoinGeckoQuote(id: string): Promise<QuoteData> {
   const url = `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`;
-  const res = await fetch(url);
+  const res = await fetch(proxied(url));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   const data = json?.[id];

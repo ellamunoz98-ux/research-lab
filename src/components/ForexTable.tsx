@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PAIRS, CURRENCY_META, rateDiff, type PairConfig } from "../lib/forex";
 import { flagUrl, preloadFlags } from "../lib/flags";
 import { fetchBoardNews, timeAgo, type BoardNews } from "../lib/industryData";
+import { proxied } from "../lib/proxy";
 
 interface RateData {
   base: string;
@@ -11,7 +12,7 @@ interface RateData {
 
 async function fetchRates(base: string): Promise<RateData> {
   const url = `https://open.er-api.com/v6/latest/${base}`;
-  const res = await fetch(url);
+  const res = await fetch(proxied(url));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   if (json.result !== "success") throw new Error("rates error");

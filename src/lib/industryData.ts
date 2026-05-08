@@ -1,8 +1,10 @@
 /**
  * 行业 / 概念板块数据获取层
- * 数据源：东方财富 push2 / np-listapi
- * 接口完全公开免登录，CORS 在浏览器端直连可用
+ * 数据源：东方财富 push2 / search-api-web
+ * 通过自家 Worker 代理转发（绕过 CORS 与 *.pages.dev Referer 反爬）
  */
+
+import { proxied } from "./proxy";
 
 const PUSH = "https://push2.eastmoney.com/api/qt/clist/get";
 
@@ -46,7 +48,7 @@ async function fetchBoardList(kind: "concept" | "industry"): Promise<BoardQuote[
 
   for (let pn = 1; pn <= MAX_PAGES; pn++) {
     const url = `${PUSH}?fs=m:90+t:${t}&fields=f3,f6,f12,f14,f62&pn=${pn}&pz=${PAGE_SIZE}&_=${Date.now()}`;
-    const res = await fetch(url);
+    const res = await fetch(proxied(url));
     if (!res.ok) break;
     const json = await res.json();
     const items = normalizeDiff(json?.data?.diff);
@@ -127,7 +129,7 @@ export async function fetchBoardStocks(
   // f2=最新价 f3=涨幅 f12=代码 f14=名称 f62=主力净流入
   // po=1 降序，按 f3（涨幅）排序
   const url = `${PUSH}?fs=b:${boardCode}&fields=f2,f3,f12,f14,f62&po=1&fid=f3&pn=1&pz=${top}&_=${Date.now()}`;
-  const res = await fetch(url);
+  const res = await fetch(proxied(url));
   if (!res.ok) return [];
   const json = await res.json();
   const items = normalizeDiff(json?.data?.diff) as Record<string, number | string | undefined>[];
@@ -171,7 +173,7 @@ export async function fetchBoardNews(boardName: string): Promise<BoardNews[]> {
   });
   const url = `https://search-api-web.eastmoney.com/search/jsonp?cb=&param=${encodeURIComponent(param)}`;
   try {
-    const res = await fetch(url);
+    const res = await fetch(proxied(url));
     if (!res.ok) return [];
     const text = await res.text();
     // 剥离 JSONP 外层括号 — 响应形如 `({...})` 或 `({...});`
