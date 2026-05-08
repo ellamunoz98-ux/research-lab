@@ -71,6 +71,75 @@ export function getBoardEmoji(boardName: string, industryFallback?: string): str
   return industryFallback ?? "📊";
 }
 
+/**
+ * 子板块图片文件名（slug）映射
+ * 文件路径约定：public/industries/{slug}.jpg
+ * 你按下面的 slug 命名生成的图片放进文件夹即可
+ */
+export const BOARD_SLUG: Record<string, string> = {
+  // AI 算力
+  算力概念: "compute",
+  CPO概念: "cpo",
+  PCB: "pcb",
+  液冷概念: "liquid-cooling",
+  存储芯片: "memory-chip",
+  数据中心: "data-center",
+  // 半导体
+  半导体设备: "semi-equipment",
+  半导体材料: "semi-material",
+  集成电路制造: "ic-fab",
+  集成电路封测: "ic-packaging",
+  第三代半导体: "semi-gen3",
+  先进封装: "advanced-packaging",
+  // 机器人
+  人形机器人: "humanoid",
+  机器人执行器: "robot-actuator",
+  减速器: "reducer",
+  机器视觉: "machine-vision",
+  无人机: "drone",
+  // 新能源车
+  新能源车: "ev",
+  固态电池: "solid-state-battery",
+  锂电池概念: "li-battery-concept",
+  锂电池: "li-battery",
+  // 创新药
+  创新药: "innovative-drug",
+  减肥药: "glp1",
+  医疗器械概念: "med-device-concept",
+  医疗器械: "med-device",
+  // 军工 / 低空
+  商业航天: "space",
+  低空经济: "evtol",
+  卫星互联网: "satellite",
+  北斗导航: "beidou",
+  军工: "defense",
+  // 消费电子
+  苹果概念: "apple",
+  智能穿戴: "wearable",
+  "柔性屏(折叠屏)": "foldable",
+  消费电子: "consumer-electronics",
+  // 大消费
+  白酒: "baijiu",
+  食品饮料: "food-beverage",
+  白色家电: "home-appliance",
+  旅游酒店: "travel-hotel",
+  免税概念: "duty-free",
+};
+
+/** 板块名 → 图片 URL（不存在时返回 null，组件做兜底） */
+export function getBoardImage(boardName: string): string | null {
+  let slug = BOARD_SLUG[boardName];
+  if (!slug) {
+    for (const key of Object.keys(BOARD_SLUG)) {
+      if (boardName.includes(key) || key.includes(boardName)) {
+        slug = BOARD_SLUG[key];
+        break;
+      }
+    }
+  }
+  return slug ? `/industries/${slug}.jpg` : null;
+}
+
 export interface IndustryDef {
   id: string;
   name: string;

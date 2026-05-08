@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { hierarchy, treemap as d3treemap } from "d3-hierarchy";
 import type { HierarchyRectangularNode } from "d3-hierarchy";
-import { INDUSTRIES, getBoardEmoji, type IndustryDef } from "../lib/industries";
+import {
+  INDUSTRIES,
+  getBoardEmoji,
+  getBoardImage,
+  type IndustryDef,
+} from "../lib/industries";
 import {
   fetchAllBoards,
   fetchBoardStocks,
@@ -274,6 +279,7 @@ function TreemapCell({
   onSelect: (b: BoardQuote) => void;
   isSelected: boolean;
 }) {
+  const [imgLoaded, setImgLoaded] = useState(false);
   const x = node.x0;
   const y = node.y0;
   const w = node.x1 - node.x0;
@@ -346,6 +352,14 @@ function TreemapCell({
   // emoji 大小：跟方格短边联动，最大 88、最小 18 才显示
   const emojiSize = Math.min(Math.min(w, h) * 0.65, w * 0.45, 88);
   const showEmoji = emojiSize >= 18;
+  const imageUrl = getBoardImage(board.name);
+  // 涨跌色（在图片模式下用作 accent 色 + 边框）
+  const directionAccent =
+    board.changePct > 0.05
+      ? "#fb7185"
+      : board.changePct < -0.05
+        ? "#10b981"
+        : "#94a3b8";
 
   return (
     <button
@@ -384,7 +398,7 @@ function TreemapCell({
         e.currentTarget.style.zIndex = "auto";
       }}
     >
-      {/* 行业符号水印（emoji），定位在右下角溢出一点做"探出来"的视觉感 */}
+      {/* 行业符号水印（emoji），无图时显示，有图时被图片盖住 */}
       {showEmoji && (
         <div
           aria-hidden="true"
@@ -404,6 +418,58 @@ function TreemapCell({
           {emoji}
         </div>
       )}
+      {/* 行业图片（如果有就铺满，做"杂志封面"感） */}
+      {imageUrl && !tiny && (
+        <img
+          src={imageUrl}
+          alt=""
+          loading="lazy"
+          onLoad={() => setImgLoaded(true)}
+          onError={() => setImgLoaded(false)}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            opacity: imgLoaded ? 0.78 : 0,
+            transition: "opacity 0.4s ease-out",
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        />
+      )}
+      {/* 图片之上的暗色渐变蒙层，让文字读起来 */}
+      {imgLoaded && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.55) 100%)",
+            pointerEvents: "none",
+            zIndex: 2,
+          }}
+        />
+      )}
+      {/* 涨跌方向色边（图片模式下提供方向信号） */}
+      {imgLoaded && !isSelected && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 3,
+            background: directionAccent,
+            opacity: 0.8,
+            pointerEvents: "none",
+            zIndex: 3,
+          }}
+        />
+      )}
       {!tiny && (
         <div
           style={{
@@ -415,7 +481,7 @@ function TreemapCell({
             whiteSpace: "nowrap",
             opacity: 0.95,
             position: "relative",
-            zIndex: 1,
+            zIndex: 4,
           }}
         >
           {board.name}
@@ -429,7 +495,7 @@ function TreemapCell({
             alignItems: "flex-end",
             gap: 4,
             position: "relative",
-            zIndex: 1,
+            zIndex: 4,
           }}
         >
           <div
@@ -469,7 +535,7 @@ function TreemapCell({
             fontWeight: 700,
             color: accent,
             position: "relative",
-            zIndex: 1,
+            zIndex: 4,
             textShadow: "0 1px 2px rgba(0,0,0,0.5)",
           }}
         >
