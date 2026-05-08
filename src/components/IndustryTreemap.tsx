@@ -418,13 +418,13 @@ function TreemapCell({
           {emoji}
         </div>
       )}
-      {/* 行业图片（如果有就铺满，做"杂志封面"感）— 不论格子多小都渲染，
-          小格子只是缩成迷你缩略图，仍然有视觉提示 */}
+      {/* 行业图片（如果有就铺满，做"杂志封面"感）— 不论格子多小都渲染 */}
       {imageUrl && (
         <img
           src={imageUrl}
           alt=""
-          loading="lazy"
+          loading="eager"
+          decoding="async"
           onLoad={() => setImgLoaded(true)}
           onError={() => setImgLoaded(false)}
           style={{
@@ -433,22 +433,24 @@ function TreemapCell({
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            opacity: imgLoaded ? (tiny ? 0.85 : 0.78) : 0,
+            // tiny 格子无文字，图片本身就是主视觉，给到接近不透明
+            opacity: imgLoaded ? (tiny ? 1 : small ? 0.92 : 0.82) : 0,
             transition: "opacity 0.4s ease-out",
             pointerEvents: "none",
             zIndex: 1,
           }}
         />
       )}
-      {/* 图片之上的暗色渐变蒙层，让文字读起来 */}
-      {imgLoaded && (
+      {/* 图片之上的暗色渐变蒙层 — 只对有文字的格子加，tiny 格子完全不加 */}
+      {imgLoaded && !tiny && (
         <div
           aria-hidden="true"
           style={{
             position: "absolute",
             inset: 0,
-            background:
-              "linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.55) 100%)",
+            background: small
+              ? "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.10) 60%, rgba(0,0,0,0.25) 100%)"
+              : "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.30) 55%, rgba(0,0,0,0.50) 100%)",
             pointerEvents: "none",
             zIndex: 2,
           }}
