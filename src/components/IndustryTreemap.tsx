@@ -487,7 +487,7 @@ function TreemapCell({
           }}
         />
       )}
-      {/* 图片之上的暗色渐变蒙层 — 只对有文字的格子加，tiny 格子完全不加 */}
+      {/* 图片之上的暗色渐变蒙层 — 只对有文字的格子加，加深让文字更醒目 */}
       {imgLoaded && !tiny && (
         <div
           aria-hidden="true"
@@ -495,8 +495,8 @@ function TreemapCell({
             position: "absolute",
             inset: 0,
             background: small
-              ? "linear-gradient(to top, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.05) 60%, rgba(0,0,0,0.15) 100%)"
-              : "linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.10) 55%, rgba(0,0,0,0.28) 100%)",
+              ? "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.45) 100%)"
+              : "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.30) 55%, rgba(0,0,0,0.55) 100%)",
             pointerEvents: "none",
             zIndex: 2,
           }}
@@ -522,15 +522,19 @@ function TreemapCell({
       {!tiny && (
         <div
           style={{
-            fontSize: small ? 10 : 12,
-            fontWeight: 600,
+            fontSize: small ? 11 : 13,
+            fontWeight: 700,
             lineHeight: 1.2,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
-            opacity: 0.95,
             position: "relative",
             zIndex: 4,
+            color: "#ffffff",
+            // 多层阴影 + 描边，确保任何背景下都清晰可读
+            textShadow:
+              "0 1px 2px rgba(0,0,0,0.95), 0 0 8px rgba(0,0,0,0.7), 0 2px 6px rgba(0,0,0,0.5)",
+            letterSpacing: "0.02em",
           }}
         >
           {board.name}
@@ -547,14 +551,21 @@ function TreemapCell({
             zIndex: 4,
           }}
         >
+          {/* 涨跌幅放进半透明深色胶囊里，文字层和图片层完全分离 */}
           <div
             style={{
               fontFamily: "ui-monospace,monospace",
-              fontSize: w > 130 ? 18 : 14,
-              fontWeight: 700,
+              fontSize: w > 130 ? 17 : 13,
+              fontWeight: 800,
               color: accent,
               lineHeight: 1,
-              textShadow: "0 1px 2px rgba(0,0,0,0.5)",
+              padding: "3px 7px",
+              borderRadius: 5,
+              background: "rgba(0,0,0,0.55)",
+              backdropFilter: "blur(6px)",
+              border: `1px solid ${accent}55`,
+              textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
             }}
           >
             {board.changePct > 0 ? "+" : ""}
@@ -564,12 +575,14 @@ function TreemapCell({
             style={{
               fontFamily: "ui-monospace,monospace",
               fontSize: 9,
-              opacity: 0.85,
-              padding: "1px 5px",
-              borderRadius: 3,
-              background: "rgba(0,0,0,0.4)",
+              fontWeight: 600,
+              color: "#ffffff",
+              padding: "2px 6px",
+              borderRadius: 4,
+              background: "rgba(0,0,0,0.55)",
               whiteSpace: "nowrap",
               backdropFilter: "blur(4px)",
+              textShadow: "0 1px 2px rgba(0,0,0,0.5)",
             }}
           >
             热 {heat}
@@ -580,11 +593,16 @@ function TreemapCell({
         <div
           style={{
             fontFamily: "ui-monospace,monospace",
-            fontSize: 10,
-            fontWeight: 700,
+            fontSize: 11,
+            fontWeight: 800,
             color: accent,
             position: "relative",
             zIndex: 4,
+            padding: "2px 6px",
+            borderRadius: 4,
+            background: "rgba(0,0,0,0.55)",
+            backdropFilter: "blur(4px)",
+            alignSelf: "flex-start",
             textShadow: "0 1px 2px rgba(0,0,0,0.5)",
           }}
         >

@@ -352,7 +352,28 @@ function ExpandedDetail({ board }: { board: BoardQuote }) {
             ))}
           </div>
         ) : (
-          <div className="text-xs text-text-muted">暂无成分股数据</div>
+          <a
+            href={`https://quote.eastmoney.com/center/boardlist.html#boards2-90.${board.code}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-cyan-accent transition-colors"
+          >
+            <span>在东方财富查看龙头股</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              className="w-3 h-3"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M14 5l7 7m0 0l-7 7m7-7H3"
+              />
+            </svg>
+          </a>
         )}
       </div>
 
