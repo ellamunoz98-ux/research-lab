@@ -40,3 +40,11 @@ export function proxied(url: string): string {
     return url;
   }
 }
+
+/**
+ * Worker 自家 RSS 解析端点（绕过 rss2json 限速）。
+ * 返回格式与 rss2json 兼容：{ status: "ok", items: [...] }
+ */
+export function feedProxyUrl(rssUrl: string): string {
+  return `${PROXY_BASE}/proxy/feed?rss_url=${encodeURIComponent(rssUrl)}`;
+}

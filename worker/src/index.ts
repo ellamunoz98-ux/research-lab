@@ -255,6 +255,161 @@ async function handleProxy(
   }
 }
 
+/* --------------------------- RSS 解析代理 --------------------------- */
+
+interface ParsedFeedItem {
+  title: string;
+  link: string;
+  pubDate: string;
+  description: string;
+  guid: string;
+  thumbnail?: string;
+  author?: string;
+}
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'");
+}
+
+function tagText(block: string, tag: string): string {
+  // 支持带命名空间的标签，例如 dc:date / media:thumbnail
+  const re = new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)</${tag}>`, "i");
+  const m = re.exec(block);
+  return m ? decodeEntities(m[1]).trim() : "";
+}
+
+function tagAttr(block: string, tag: string, attr: string): string {
+  const re = new RegExp(`<${tag}[^>]*\\s${attr}=["']([^"']+)["'][^>]*/?>`, "i");
+  const m = re.exec(block);
+  return m ? decodeEntities(m[1]) : "";
+}
+
+function parseRssXml(xml: string): ParsedFeedItem[] {
+  const items: ParsedFeedItem[] = [];
+  // 兼容 RSS 2.0 <item> 和 Atom <entry>
+  const blocks: string[] = [];
+  for (const m of xml.matchAll(/<item(?:\s[^>]*)?>([\s\S]*?)<\/item>/gi)) {
+    blocks.push(m[1]);
+  }
+  if (blocks.length === 0) {
+    for (const m of xml.matchAll(/<entry(?:\s[^>]*)?>([\s\S]*?)<\/entry>/gi)) {
+      blocks.push(m[1]);
+    }
+  }
+  for (const block of blocks) {
+    const title = tagText(block, "title");
+    let link = tagText(block, "link");
+    if (!link) link = tagAttr(block, "link", "href"); // Atom
+    const pubDate =
+      tagText(block, "pubDate") ||
+      tagText(block, "dc:date") ||
+      tagText(block, "published") ||
+      tagText(block, "updated");
+    const description =
+      tagText(block, "description") ||
+      tagText(block, "summary") ||
+      tagText(block, "content") ||
+      tagText(block, "content:encoded");
+    const guid = tagText(block, "guid") || link;
+    const author =
+      tagText(block, "author") ||
+      tagText(block, "dc:creator") ||
+      undefined;
+    const thumbnail =
+      tagAttr(block, "media:thumbnail", "url") ||
+      tagAttr(block, "media:content", "url") ||
+      tagAttr(block, "enclosure", "url") ||
+      undefined;
+    if (title || link) {
+      items.push({ title, link, pubDate, description, guid, author, thumbnail });
+    }
+  }
+  return items;
+}
+
+async function handleFeedProxy(
+  url: URL,
+  corsBase: HeadersInit,
+  ctx: ExecutionContext
+): Promise<Response> {
+  const rssUrl = url.searchParams.get("rss_url");
+  if (!rssUrl) return text("missing rss_url", corsBase, 400);
+  let target: URL;
+  try {
+    target = new URL(rssUrl);
+  } catch {
+    return text("invalid rss_url", corsBase, 400);
+  }
+  if (target.protocol !== "https:" && target.protocol !== "http:") {
+    return text("forbidden protocol", corsBase, 400);
+  }
+
+  const cacheKey = new Request(`https://feed-cache.local/${encodeURIComponent(rssUrl)}`, { method: "GET" });
+  const cache = caches.default;
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    const headers = new Headers(cached.headers);
+    Object.entries(corsBase).forEach(([k, v]) => headers.set(k, String(v)));
+    headers.set("x-cache", "HIT");
+    return new Response(cached.body, { status: cached.status, headers });
+  }
+
+  try {
+    const upstream = await fetch(target.toString(), {
+      method: "GET",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
+      },
+      redirect: "follow",
+    });
+    if (!upstream.ok) {
+      return json(
+        { status: "error", message: `upstream ${upstream.status}` },
+        corsBase,
+        upstream.status
+      );
+    }
+    const xml = await upstream.text();
+    const items = parseRssXml(xml).slice(0, 30);
+    const body = JSON.stringify({ status: "ok", items });
+
+    const cacheTtl = 300; // 5 分钟
+    const toCache = new Response(body, {
+      status: 200,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": `public, max-age=${cacheTtl}`,
+      },
+    });
+    ctx.waitUntil(cache.put(cacheKey, toCache));
+
+    return new Response(body, {
+      status: 200,
+      headers: {
+        ...corsBase,
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": `public, max-age=${cacheTtl}`,
+        "x-cache": "MISS",
+      },
+    });
+  } catch (e) {
+    return json(
+      { status: "error", message: e instanceof Error ? e.message : String(e) },
+      corsBase,
+      502
+    );
+  }
+}
+
 /* ----------------------------- /数据源代理 ----------------------------- */
 
 async function handleDelete(req: Request, env: Env, headers: HeadersInit): Promise<Response> {
@@ -285,6 +440,10 @@ export default {
 
     if (url.pathname === "/health") {
       return json({ ok: true, time: Date.now() }, headers);
+    }
+
+    if (url.pathname === "/proxy/feed") {
+      return handleFeedProxy(url, headers, ctx);
     }
 
     if (url.pathname.startsWith("/proxy/")) {

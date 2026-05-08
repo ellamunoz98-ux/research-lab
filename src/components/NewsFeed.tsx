@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { proxied } from "../lib/proxy";
+import { feedProxyUrl } from "../lib/proxy";
 
 /**
  * 国际金融时事 / 资讯快线
- * 数据源：rss2json.com（CORS 开放免费代理）+ 多个 RSS 源聚合
+ * 数据源：原始 RSS（Investing / CoinDesk / CoinTelegraph 等），
+ * 走自家 Worker 解析转 JSON，绕开 rss2json 共享 IP 限速。
  * 5 分钟自动刷新
  */
 
@@ -83,8 +84,7 @@ const CATEGORIES = [
 type CategoryFilter = (typeof CATEGORIES)[number]["id"];
 
 async function fetchSource(s: FeedSource): Promise<NewsItem[]> {
-  const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(s.rss)}`;
-  const res = await fetch(proxied(url));
+  const res = await fetch(feedProxyUrl(s.rss));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   if (json.status !== "ok" || !Array.isArray(json.items)) {
