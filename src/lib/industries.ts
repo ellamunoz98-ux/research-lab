@@ -1,0 +1,74 @@
+/**
+ * 8 个核心行业 + 各自的热门子板块
+ * sub-board 名按"东方财富概念板块/行业板块"在线列表里的名称设置，
+ * 在数据加载时做模糊匹配查找对应板块代码（BK 开头）
+ */
+
+export interface IndustryDef {
+  id: string;
+  name: string;
+  icon: string;
+  /** 一句话定位 */
+  tagline: string;
+  /** 子板块名（按 eastmoney 板块名近似匹配） */
+  subBoards: string[];
+}
+
+export const INDUSTRIES: IndustryDef[] = [
+  {
+    id: "ai-compute",
+    name: "AI 算力",
+    icon: "🚀",
+    tagline: "训练 + 推理算力链：硬件 / 互联 / 散热三层",
+    subBoards: ["CPO", "光模块", "PCB", "液冷服务器", "HBM", "数据中心"],
+  },
+  {
+    id: "semiconductor",
+    name: "半导体",
+    icon: "🔬",
+    tagline: "国产替代主线，从设备材料到设计封测全链条",
+    subBoards: ["半导体设备", "半导体材料", "集成电路", "存储芯片", "封装测试", "Chiplet概念"],
+  },
+  {
+    id: "robotics",
+    name: "机器人",
+    icon: "🤖",
+    tagline: "人形机器人产业化拐点 + 工业自动化升级",
+    subBoards: ["人形机器人", "工业机器人", "减速器", "机器视觉", "无人机"],
+  },
+  {
+    id: "new-energy-vehicle",
+    name: "新能源车",
+    icon: "🚗",
+    tagline: "整车 + 智驾 + 电池新一轮技术迭代",
+    subBoards: ["新能源车", "智能驾驶", "固态电池", "锂电池", "汽车电子"],
+  },
+  {
+    id: "innovative-medicine",
+    name: "创新药",
+    icon: "💊",
+    tagline: "减肥药 / ADC / 小核酸驱动的新一轮创新周期",
+    subBoards: ["创新药", "减肥药概念", "GLP-1", "ADC概念", "CXO", "医疗器械"],
+  },
+  {
+    id: "defense-aerospace",
+    name: "军工 / 低空",
+    icon: "🛰",
+    tagline: "国防装备 + 商业航天 + 低空经济",
+    subBoards: ["商业航天", "低空经济", "卫星互联网", "军工", "无人机"],
+  },
+  {
+    id: "consumer-electronics",
+    name: "消费电子",
+    icon: "📱",
+    tagline: "AI 终端落地 + 苹果链景气复苏",
+    subBoards: ["苹果概念", "VR", "智能穿戴", "折叠屏", "消费电子"],
+  },
+  {
+    id: "big-consumer",
+    name: "大消费",
+    icon: "🍷",
+    tagline: "食饮 / 白酒 / 家电 / 旅游 — 内需修复",
+    subBoards: ["白酒", "食品饮料", "家用电器", "旅游酒店", "免税"],
+  },
+];

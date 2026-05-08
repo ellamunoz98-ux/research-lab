@@ -1,0 +1,40 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import IndustryHeatmap from "../components/IndustryHeatmap.tsx";
+---
+
+<BaseLayout
+  title="行业热力图"
+  description="A 股 8 大热门行业 + 子板块实时热度，叠加龙头股动向 + 板块新闻，5 分钟自动刷新"
+>
+  <section class="pt-16 pb-10 px-6 max-w-7xl mx-auto">
+    <div class="text-xs text-cyan-accent tracking-[0.3em] font-mono mb-4" data-reveal>
+      INDUSTRY HEATMAP
+    </div>
+    <h1 class="text-5xl md:text-6xl font-bold leading-[1.1] mb-4 text-text-primary" data-reveal>
+      行业<span class="gradient-text">热力图</span>
+    </h1>
+    <p class="text-lg text-text-secondary max-w-3xl leading-relaxed" data-reveal>
+      8 大主线 · 40+ 热门子板块。涨跌幅 + 主力净流入合成"热度分"，
+      点开任意子板块查看龙头股动向 + 媒体讨论焦点 ——
+      <strong class="text-text-primary">用脚投票 + 媒体共识 = 当下市场对该方向的真实判断</strong>。
+      <br class="hidden md:block" />
+      数据来自东方财富，5 分钟自动刷新。
+    </p>
+  </section>
+
+  <section class="px-6 max-w-7xl mx-auto pb-24" data-reveal>
+    <IndustryHeatmap client:only="react" />
+  </section>
+</BaseLayout>
+
+<script>
+  import { gsap } from "gsap";
+  document.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el, i) => {
+    gsap.fromTo(
+      el,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.8, ease: "expo.out", delay: i * 0.08 }
+    );
+  });
+</script>
