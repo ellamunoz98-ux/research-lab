@@ -63,8 +63,8 @@ export default function FinancialGlobe() {
   // 层级开关
   const [layers, setLayers] = useState({
     terminator: true,
-    chokepoints: false,
-    conflicts: false,
+    chokepoints: true,
+    conflicts: true,
   });
 
   // 全局时钟，每 30 秒滴答一次，驱动开盘状态刷新
