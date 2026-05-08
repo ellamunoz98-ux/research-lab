@@ -169,10 +169,20 @@ const PROXY_TARGETS: Record<string, string> = {
   rss: "https://api.rss2json.com",
 };
 
+/** 不同数据源的边缘缓存 TTL（秒）— 静态/慢变数据 TTL 更长 */
+const CACHE_TTL: Record<string, number> = {
+  em: 20,         // 行情指数：20 秒
+  "em-search": 300, // 板块新闻：5 分钟
+  cg: 30,         // 加密货币：30 秒
+  er: 1800,       // 汇率：30 分钟
+  rss: 300,       // RSS：5 分钟
+};
+
 async function handleProxy(
   req: Request,
   url: URL,
-  corsBase: HeadersInit
+  corsBase: HeadersInit,
+  ctx: ExecutionContext
 ): Promise<Response> {
   // /proxy/<service>/<...rest>
   const segments = url.pathname.split("/").filter(Boolean);
@@ -184,6 +194,19 @@ async function handleProxy(
   const upstreamPath = segments.length > 2 ? "/" + segments.slice(2).join("/") : "/";
   const upstreamUrl = target + upstreamPath + url.search;
   const targetOrigin = new URL(target).origin;
+  const ttl = CACHE_TTL[service] ?? 15;
+
+  // 用 upstream URL 作为缓存 key，多浏览器/多组件相同请求共用同一份
+  const cacheKey = new Request(upstreamUrl, { method: "GET" });
+  const cache = caches.default;
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    // 命中边缘缓存，直接返回（加上 CORS 头）
+    const headers = new Headers(cached.headers);
+    Object.entries(corsBase).forEach(([k, v]) => headers.set(k, String(v)));
+    headers.set("x-cache", "HIT");
+    return new Response(cached.body, { status: cached.status, headers });
+  }
 
   try {
     const upstream = await fetch(upstreamUrl, {
@@ -197,17 +220,30 @@ async function handleProxy(
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
       },
       redirect: "follow",
-      cf: { cacheTtl: 15, cacheEverything: true } as RequestInitCfProperties,
     });
     const body = await upstream.arrayBuffer();
     const contentType =
       upstream.headers.get("content-type") || "application/json; charset=utf-8";
+
+    // 只缓存成功响应
+    if (upstream.ok) {
+      const toCache = new Response(body, {
+        status: upstream.status,
+        headers: {
+          "content-type": contentType,
+          "cache-control": `public, max-age=${ttl}`,
+        },
+      });
+      ctx.waitUntil(cache.put(cacheKey, toCache));
+    }
+
     return new Response(body, {
       status: upstream.status,
       headers: {
         ...corsBase,
         "content-type": contentType,
-        "cache-control": "public, max-age=15",
+        "cache-control": `public, max-age=${ttl}`,
+        "x-cache": "MISS",
       },
     });
   } catch (e) {
@@ -239,7 +275,7 @@ async function handleDelete(req: Request, env: Env, headers: HeadersInit): Promi
 }
 
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
     const headers = corsHeaders(pickOrigin(req, env));
 
@@ -252,7 +288,7 @@ export default {
     }
 
     if (url.pathname.startsWith("/proxy/")) {
-      return handleProxy(req, url, headers);
+      return handleProxy(req, url, headers, ctx);
     }
 
     if (url.pathname === "/comments") {
