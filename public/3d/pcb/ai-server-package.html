@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AI服务器Compute Tray 3D结构剖析</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #0a0e1a 0%, #141a2c 100%);
+    color: #e0e6ed;
+    min-height: 100vh;
+    padding: 30px 20px;
+  }
+  .container { max-width: 1500px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 40px; }
+  h1 {
+    font-size: 32px;
+    color: #4fc3f7;
+    margin-bottom: 8px;
+    text-shadow: 0 0 20px rgba(79, 195, 247, 0.3);
+  }
+  header .subtitle { color: #8a9bb4; font-size: 16px; }
+  .section {
+    background: linear-gradient(135deg, #1a2238 0%, #131a2e 100%);
+    border: 1px solid #2a3552;
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+  h2 {
+    color: #81c784;
+    font-size: 22px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(129, 199, 132, 0.3);
+  }
+  .description { color: #b0bec5; line-height: 1.7; margin-bottom: 20px; font-size: 15px; }
+  .svg-wrap {
+    background: radial-gradient(ellipse at center, #1f2a44 0%, #0d1322 100%);
+    border-radius: 10px;
+    padding: 20px;
+    overflow: auto;
+  }
+  svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+  .glossary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .item {
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 3px solid #4fc3f7;
+    border-radius: 6px;
+    padding: 14px 18px;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .item:hover {
+    transform: translateX(4px);
+    background: rgba(79, 195, 247, 0.08);
+  }
+  .item h3 {
+    color: #ffd54f;
+    font-size: 16px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .colorchip {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    flex-shrink: 0;
+  }
+  .item p { color: #c5cdd9; font-size: 14px; line-height: 1.6; }
+  .item .tag {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 12px;
+    background: rgba(129, 199, 132, 0.15);
+    color: #a5d6a7;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .legend-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: center;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #b0bec5;
+  }
+  .legend-row span { display: flex; align-items: center; gap: 6px; }
+  .note {
+    margin-top: 20px;
+    padding: 14px 18px;
+    background: rgba(255, 213, 79, 0.08);
+    border-left: 3px solid #ffd54f;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #d4d8df;
+    line-height: 1.7;
+  }
+  .layout-logic {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .logic-card {
+    background: rgba(79, 195, 247, 0.08);
+    border-left: 3px solid #4fc3f7;
+    padding: 12px 16px;
+    border-radius: 6px;
+  }
+  .logic-card .num {
+    display: inline-block;
+    background: #4fc3f7;
+    color: #0a0e1a;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 22px;
+    font-weight: bold;
+    margin-right: 8px;
+    font-size: 13px;
+  }
+  .logic-card strong { color: #4fc3f7; }
+  .logic-card p { color: #c5cdd9; font-size: 13px; line-height: 1.6; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>AI服务器 Compute Tray —— 立体结构剖析</h1>
+  <div class="subtitle">从PCB主板到光纤接出口的全景式结构图（以Nvidia GB200级别为参考）</div>
+</header>
+
+<!-- ============================================================ -->
+<!-- 第一部分：爆炸图 -->
+<!-- ============================================================ -->
+<div class="section">
+  <h2>① 立体爆炸图 —— 各层级组件的物理位置</h2>
+  <p class="description">
+    下面这张图把一块AI计算卡（Compute Tray）从下往上"拆开"展示。从最底下的PCB主板开始，依次往上是BGA焊球、IC载板（或玻璃基板）、C4微凸点、硅中介层、GPU+HBM、CPO光引擎、光纤、液冷盖板。每一层的标签都在左侧整齐排列，用引线指向对应组件。
+  </p>
+
+  <div class="svg-wrap">
+  <svg viewBox="0 0 1400 1300" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="pcbTop" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#0e6e3e"/>
+        <stop offset="100%" stop-color="#0a4d2c"/>
+      </linearGradient>
+      <linearGradient id="pcbSide" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#0a5530"/>
+        <stop offset="100%" stop-color="#063820"/>
+      </linearGradient>
+      <linearGradient id="subTop" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#d9b88a"/>
+        <stop offset="100%" stop-color="#b8945e"/>
+      </linearGradient>
+      <linearGradient id="subSide" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#a07a4d"/>
+        <stop offset="100%" stop-color="#7a5a35"/>
+      </linearGradient>
+      <linearGradient id="glassTop" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#a8e0f0" stop-opacity="0.85"/>
+        <stop offset="100%" stop-color="#5fb5d0" stop-opacity="0.85"/>
+      </linearGradient>
+      <linearGradient id="interTop" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#7a8290"/>
+        <stop offset="100%" stop-color="#4a5060"/>
+      </linearGradient>
+      <linearGradient id="interSide" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#5a6070"/>
+        <stop offset="100%" stop-color="#3a3f4a"/>
+      </linearGradient>
+      <linearGradient id="gpuTop" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#3a3f4a"/>
+        <stop offset="50%" stop-color="#22262e"/>
+        <stop offset="100%" stop-color="#15181f"/>
+      </linearGradient>
+      <linearGradient id="hbmTop" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#4a5470"/>
+        <stop offset="100%" stop-color="#2a3045"/>
+      </linearGradient>
+      <linearGradient id="cpoTop" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#6a3a8a"/>
+        <stop offset="100%" stop-color="#3a1f5a"/>
+      </linearGradient>
+      <linearGradient id="coolerTop" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#d8dde5"/>
+        <stop offset="100%" stop-color="#9aa5b8"/>
+      </linearGradient>
+      <radialGradient id="fiberGlow">
+        <stop offset="0%" stop-color="#ffcc44" stop-opacity="0.9"/>
+        <stop offset="100%" stop-color="#ff8800" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+        <feOffset dx="2" dy="6" result="offsetblur"/>
+        <feComponentTransfer><feFuncA type="linear" slope="0.5"/></feComponentTransfer>
+        <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- 标题 -->
+    <text x="700" y="40" fill="#4fc3f7" font-size="22" font-weight="bold" text-anchor="middle">爆炸图：从下到上 9 个核心层级</text>
+    <text x="700" y="65" fill="#8a9bb4" font-size="13" text-anchor="middle">封装尺寸约 110×110mm（GPU封装）+ 更大的PCB主板</text>
+
+    <!-- ===== 标签列（左侧，所有标签整齐排列） ===== -->
+    <!-- ⑨ 液冷盖板 -->
+    <g>
+      <text x="40" y="195" fill="#9aa5b8" font-size="14" font-weight="bold">⑨ 液冷散热盖板</text>
+      <text x="40" y="215" fill="#c5cdd9" font-size="11">液冷板紧贴芯片 · 1200W+功耗</text>
+      <line x1="40" y1="225" x2="290" y2="225" stroke="#9aa5b8" stroke-width="0.6" stroke-dasharray="3,2"/>
+    </g>
+
+    <!-- ⑧ 光纤 -->
+    <g>
+      <text x="40" y="305" fill="#ffd54f" font-size="14" font-weight="bold">⑧ 光纤束（高速数据进出）</text>
+      <text x="40" y="325" fill="#ffe082" font-size="11">通往交换机/其他GPU节点</text>
+    </g>
+
+    <!-- ⑦ CPO 光引擎 -->
+    <g>
+      <text x="40" y="430" fill="#e0a8ff" font-size="14" font-weight="bold">⑦ CPO 光引擎</text>
+      <text x="40" y="450" fill="#c5cdd9" font-size="11">围绕GPU布置 · 电↔光转换</text>
+      <line x1="40" y1="460" x2="290" y2="460" stroke="#e0a8ff" stroke-width="0.6" stroke-dasharray="3,2"/>
+    </g>
+
+    <!-- ⑥ GPU + HBM -->
+    <g>
+      <text x="40" y="530" fill="#ffd700" font-size="14" font-weight="bold">⑥ GPU 计算芯片 + HBM 内存</text>
+      <text x="40" y="550" fill="#c5cdd9" font-size="11">中央 GPU + 两侧 4-8颗 HBM3E</text>
+      <line x1="40" y1="560" x2="290" y2="560" stroke="#ffd700" stroke-width="0.6" stroke-dasharray="3,2"/>
+    </g>
+
+    <!-- ⑤ 硅中介层 -->
+    <g>
+      <text x="40" y="635" fill="#88c8e8" font-size="14" font-weight="bold">⑤ 硅中介层 (CoWoS)</text>
+      <text x="40" y="655" fill="#c5cdd9" font-size="11">实现 Die-to-Die 高速互联</text>
+      <line x1="40" y1="665" x2="290" y2="665" stroke="#88c8e8" stroke-width="0.6" stroke-dasharray="3,2"/>
+    </g>
+
+    <!-- ④ C4 微凸点 -->
+    <g>
+      <text x="40" y="725" fill="#cccccc" font-size="13" font-weight="bold">④ C4 微凸点</text>
+      <text x="40" y="743" fill="#c5cdd9" font-size="11">连接中介层和载板 · ~50μm</text>
+    </g>
+
+    <!-- ③ IC 载板 -->
+    <g>
+      <text x="40" y="830" fill="#d9b88a" font-size="14" font-weight="bold">③ IC 载板（ABF）</text>
+      <text x="40" y="850" fill="#c5cdd9" font-size="11">芯片与PCB之间的"信号扇出层"</text>
+      <text x="40" y="867" fill="#c5cdd9" font-size="11">线宽线距10μm级 · 110×110mm</text>
+      <line x1="40" y1="878" x2="290" y2="878" stroke="#d9b88a" stroke-width="0.6" stroke-dasharray="3,2"/>
+    </g>
+
+    <!-- ② BGA -->
+    <g>
+      <text x="40" y="945" fill="#c0c0c0" font-size="13" font-weight="bold">② BGA 焊球阵列</text>
+      <text x="40" y="963" fill="#c5cdd9" font-size="11">连接载板和PCB · 数千个</text>
+    </g>
+
+    <!-- ① PCB主板 -->
+    <g>
+      <text x="40" y="1060" fill="#81c784" font-size="14" font-weight="bold">① PCB 主板</text>
+      <text x="40" y="1080" fill="#c5cdd9" font-size="11">机械支撑 · 电源 · 低速信号</text>
+      <text x="40" y="1097" fill="#c5cdd9" font-size="11">32-40层堆叠 · M6/M7级CCL</text>
+      <line x1="40" y1="1108" x2="290" y2="1108" stroke="#81c784" stroke-width="0.6" stroke-dasharray="3,2"/>
+    </g>
+
+    <!-- ===== 主图：从下往上的层叠 ===== -->
+
+    <!-- ① PCB 主板 -->
+    <g filter="url(#dropShadow)">
+      <polygon points="320,1080 1070,1080 1210,990 460,990" fill="url(#pcbTop)" stroke="#063820" stroke-width="1"/>
+      <polygon points="320,1080 1070,1080 1070,1120 320,1120" fill="url(#pcbSide)" stroke="#063820" stroke-width="1"/>
+      <polygon points="1070,1080 1210,990 1210,1030 1070,1120" fill="#053018" stroke="#063820" stroke-width="1"/>
+      <!-- MLCC -->
+      <rect x="400" y="1020" width="14" height="6" fill="#7a5a35" transform="skewY(-15)"/>
+      <rect x="440" y="1010" width="14" height="6" fill="#7a5a35" transform="skewY(-15)"/>
+      <rect x="490" y="1005" width="14" height="6" fill="#7a5a35" transform="skewY(-15)"/>
+      <rect x="970" y="945" width="14" height="6" fill="#7a5a35" transform="skewY(-15)"/>
+      <rect x="1020" y="935" width="14" height="6" fill="#7a5a35" transform="skewY(-15)"/>
+      <!-- 电源模块 -->
+      <polygon points="360,1055 410,1055 430,1040 380,1040" fill="#1a3a5a" stroke="#0a2540" stroke-width="0.5"/>
+      <polygon points="410,1055 430,1040 430,1050 410,1065" fill="#0f2540"/>
+      <polygon points="970,980 1040,980 1060,965 990,965" fill="#1a3a5a" stroke="#0a2540" stroke-width="0.5"/>
+      <polygon points="1040,980 1060,965 1060,975 1040,990" fill="#0f2540"/>
+    </g>
+
+    <!-- ② BGA 焊球阵列 -->
+    <g>
+      <circle cx="550" cy="935" r="4" fill="#c0c0c0"/>
+      <circle cx="590" cy="935" r="4" fill="#c0c0c0"/>
+      <circle cx="630" cy="935" r="4" fill="#c0c0c0"/>
+      <circle cx="670" cy="935" r="4" fill="#c0c0c0"/>
+      <circle cx="710" cy="935" r="4" fill="#c0c0c0"/>
+      <circle cx="750" cy="935" r="4" fill="#c0c0c0"/>
+      <circle cx="790" cy="935" r="4" fill="#c0c0c0"/>
+      <circle cx="830" cy="935" r="4" fill="#c0c0c0"/>
+      <circle cx="870" cy="935" r="4" fill="#c0c0c0"/>
+      <circle cx="910" cy="935" r="4" fill="#c0c0c0"/>
+      <circle cx="950" cy="935" r="4" fill="#c0c0c0"/>
+      <circle cx="570" cy="925" r="4" fill="#c0c0c0"/>
+      <circle cx="610" cy="925" r="4" fill="#c0c0c0"/>
+      <circle cx="650" cy="925" r="4" fill="#c0c0c0"/>
+      <circle cx="690" cy="925" r="4" fill="#c0c0c0"/>
+      <circle cx="730" cy="925" r="4" fill="#c0c0c0"/>
+      <circle cx="770" cy="925" r="4" fill="#c0c0c0"/>
+      <circle cx="810" cy="925" r="4" fill="#c0c0c0"/>
+      <circle cx="850" cy="925" r="4" fill="#c0c0c0"/>
+      <circle cx="890" cy="925" r="4" fill="#c0c0c0"/>
+      <circle cx="930" cy="925" r="4" fill="#c0c0c0"/>
+      <line x1="290" y1="950" x2="540" y2="930" stroke="#c0c0c0" stroke-width="0.5" stroke-dasharray="2,2"/>
+    </g>
+
+    <!-- ③ IC 载板 -->
+    <g filter="url(#dropShadow)">
+      <polygon points="490,895 920,895 1040,815 610,815" fill="url(#subTop)" stroke="#7a5a35" stroke-width="1"/>
+      <polygon points="490,895 920,895 920,910 490,910" fill="url(#subSide)" stroke="#5a4025" stroke-width="1"/>
+      <polygon points="920,895 1040,815 1040,830 920,910" fill="#6a4d30"/>
+      <g opacity="0.25">
+        <line x1="550" y1="875" x2="970" y2="875" stroke="#5a3d20"/>
+        <line x1="550" y1="865" x2="970" y2="865" stroke="#5a3d20"/>
+        <line x1="550" y1="855" x2="970" y2="855" stroke="#5a3d20"/>
+        <line x1="550" y1="845" x2="970" y2="845" stroke="#5a3d20"/>
+      </g>
+    </g>
+
+    <!-- ④ C4 微凸点 -->
+    <g>
+      <circle cx="610" cy="790" r="2.5" fill="#dcdcdc"/>
+      <circle cx="640" cy="790" r="2.5" fill="#dcdcdc"/>
+      <circle cx="670" cy="790" r="2.5" fill="#dcdcdc"/>
+      <circle cx="700" cy="790" r="2.5" fill="#dcdcdc"/>
+      <circle cx="730" cy="790" r="2.5" fill="#dcdcdc"/>
+      <circle cx="760" cy="790" r="2.5" fill="#dcdcdc"/>
+      <circle cx="790" cy="790" r="2.5" fill="#dcdcdc"/>
+      <circle cx="820" cy="790" r="2.5" fill="#dcdcdc"/>
+      <circle cx="850" cy="790" r="2.5" fill="#dcdcdc"/>
+      <circle cx="880" cy="790" r="2.5" fill="#dcdcdc"/>
+      <circle cx="630" cy="783" r="2.5" fill="#dcdcdc"/>
+      <circle cx="660" cy="783" r="2.5" fill="#dcdcdc"/>
+      <circle cx="690" cy="783" r="2.5" fill="#dcdcdc"/>
+      <circle cx="720" cy="783" r="2.5" fill="#dcdcdc"/>
+      <circle cx="750" cy="783" r="2.5" fill="#dcdcdc"/>
+      <circle cx="780" cy="783" r="2.5" fill="#dcdcdc"/>
+      <circle cx="810" cy="783" r="2.5" fill="#dcdcdc"/>
+      <circle cx="840" cy="783" r="2.5" fill="#dcdcdc"/>
+      <circle cx="870" cy="783" r="2.5" fill="#dcdcdc"/>
+      <line x1="290" y1="730" x2="600" y2="788" stroke="#cccccc" stroke-width="0.5" stroke-dasharray="2,2"/>
+    </g>
+
+    <!-- ⑤ 硅中介层 -->
+    <g filter="url(#dropShadow)">
+      <polygon points="550,755 880,755 1000,685 670,685" fill="url(#interTop)" stroke="#3a3f4a" stroke-width="1"/>
+      <polygon points="550,755 880,755 880,767 550,767" fill="url(#interSide)" stroke="#2a3045" stroke-width="1"/>
+      <polygon points="880,755 1000,685 1000,697 880,767" fill="#2a3045"/>
+      <g opacity="0.4" stroke="#88c8e8" stroke-width="0.5" fill="none">
+        <line x1="620" y1="740" x2="970" y2="700"/>
+        <line x1="620" y1="730" x2="970" y2="690"/>
+        <line x1="620" y1="720" x2="970" y2="680"/>
+      </g>
+    </g>
+
+    <!-- ⑥ GPU + HBM -->
+    <g filter="url(#dropShadow)">
+      <!-- HBM 1（左） -->
+      <g>
+        <polygon points="580,665 660,665 700,635 620,635" fill="url(#hbmTop)" stroke="#1a1f2e" stroke-width="1"/>
+        <polygon points="580,665 660,665 660,673 580,673" fill="#1a2030"/>
+        <polygon points="660,665 700,635 700,643 660,673" fill="#0a1020"/>
+        <g opacity="0.6">
+          <line x1="585" y1="661" x2="655" y2="661" stroke="#5a6478" stroke-width="0.5"/>
+          <line x1="585" y1="657" x2="655" y2="657" stroke="#5a6478" stroke-width="0.5"/>
+          <line x1="585" y1="653" x2="655" y2="653" stroke="#5a6478" stroke-width="0.5"/>
+          <line x1="585" y1="649" x2="655" y2="649" stroke="#5a6478" stroke-width="0.5"/>
+          <line x1="585" y1="645" x2="655" y2="645" stroke="#5a6478" stroke-width="0.5"/>
+        </g>
+      </g>
+      <!-- GPU Die -->
+      <g>
+        <polygon points="675,665 825,665 865,635 715,635" fill="url(#gpuTop)" stroke="#0a0e15" stroke-width="1.5"/>
+        <polygon points="675,665 825,665 825,675 675,675" fill="#0a0e15"/>
+        <polygon points="825,665 865,635 865,645 825,675" fill="#05080d"/>
+        <text x="755" y="655" fill="#ffd700" font-size="11" font-weight="bold" text-anchor="middle" transform="skewX(-30) translate(160, 0)">GPU</text>
+      </g>
+      <!-- HBM 2（右） -->
+      <g>
+        <polygon points="840,665 920,665 960,635 880,635" fill="url(#hbmTop)" stroke="#1a1f2e" stroke-width="1"/>
+        <polygon points="840,665 920,665 920,673 840,673" fill="#1a2030"/>
+        <polygon points="920,665 960,635 960,643 920,673" fill="#0a1020"/>
+        <g opacity="0.6">
+          <line x1="845" y1="661" x2="915" y2="661" stroke="#5a6478" stroke-width="0.5"/>
+          <line x1="845" y1="657" x2="915" y2="657" stroke="#5a6478" stroke-width="0.5"/>
+          <line x1="845" y1="653" x2="915" y2="653" stroke="#5a6478" stroke-width="0.5"/>
+          <line x1="845" y1="649" x2="915" y2="649" stroke="#5a6478" stroke-width="0.5"/>
+          <line x1="845" y1="645" x2="915" y2="645" stroke="#5a6478" stroke-width="0.5"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- ⑦ CPO 光引擎 -->
+    <g filter="url(#dropShadow)">
+      <polygon points="500,565 570,565 590,550 520,550" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="0.8"/>
+      <polygon points="500,565 570,565 570,573 500,573" fill="#1a0f2a"/>
+      <polygon points="550,525 620,525 640,510 570,510" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="0.8"/>
+      <polygon points="550,525 620,525 620,533 550,533" fill="#1a0f2a"/>
+      <polygon points="900,565 970,565 990,550 920,550" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="0.8"/>
+      <polygon points="900,565 970,565 970,573 900,573" fill="#1a0f2a"/>
+      <polygon points="950,525 1020,525 1040,510 970,510" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="0.8"/>
+      <polygon points="950,525 1020,525 1020,533 950,533" fill="#1a0f2a"/>
+
+      <circle cx="520" cy="555" r="2" fill="#ffaa44" opacity="0.9"/>
+      <circle cx="540" cy="555" r="2" fill="#ffaa44" opacity="0.9"/>
+      <circle cx="560" cy="555" r="2" fill="#ffaa44" opacity="0.9"/>
+      <circle cx="570" cy="515" r="2" fill="#ffaa44" opacity="0.9"/>
+      <circle cx="590" cy="515" r="2" fill="#ffaa44" opacity="0.9"/>
+      <circle cx="610" cy="515" r="2" fill="#ffaa44" opacity="0.9"/>
+      <circle cx="920" cy="555" r="2" fill="#ffaa44" opacity="0.9"/>
+      <circle cx="940" cy="555" r="2" fill="#ffaa44" opacity="0.9"/>
+      <circle cx="960" cy="555" r="2" fill="#ffaa44" opacity="0.9"/>
+      <circle cx="970" cy="515" r="2" fill="#ffaa44" opacity="0.9"/>
+      <circle cx="990" cy="515" r="2" fill="#ffaa44" opacity="0.9"/>
+      <circle cx="1010" cy="515" r="2" fill="#ffaa44" opacity="0.9"/>
+    </g>
+
+    <!-- ⑧ 光纤 -->
+    <g>
+      <path d="M 520 550 Q 470 480 380 430" stroke="#ffaa00" stroke-width="2" fill="none" opacity="0.85"/>
+      <path d="M 540 550 Q 480 485 370 445" stroke="#ffcc44" stroke-width="2" fill="none" opacity="0.85"/>
+      <path d="M 560 550 Q 500 490 380 460" stroke="#ffaa00" stroke-width="2" fill="none" opacity="0.85"/>
+      <path d="M 590 513 Q 520 460 360 415" stroke="#ffcc44" stroke-width="2" fill="none" opacity="0.85"/>
+      <path d="M 610 513 Q 530 465 365 430" stroke="#ffaa00" stroke-width="2" fill="none" opacity="0.85"/>
+
+      <path d="M 940 550 Q 1040 485 1170 430" stroke="#ffaa00" stroke-width="2" fill="none" opacity="0.85"/>
+      <path d="M 960 550 Q 1060 490 1180 445" stroke="#ffcc44" stroke-width="2" fill="none" opacity="0.85"/>
+      <path d="M 980 550 Q 1080 495 1170 460" stroke="#ffaa00" stroke-width="2" fill="none" opacity="0.85"/>
+      <path d="M 990 513 Q 1090 465 1190 415" stroke="#ffcc44" stroke-width="2" fill="none" opacity="0.85"/>
+      <path d="M 1010 513 Q 1110 470 1185 430" stroke="#ffaa00" stroke-width="2" fill="none" opacity="0.85"/>
+
+      <rect x="345" y="405" width="35" height="60" fill="#3a3a3a" stroke="#1a1a1a" stroke-width="1" rx="3"/>
+      <rect x="350" y="410" width="25" height="8" fill="#ffaa00" rx="1"/>
+      <rect x="350" y="422" width="25" height="8" fill="#ffaa00" rx="1"/>
+      <rect x="350" y="434" width="25" height="8" fill="#ffaa00" rx="1"/>
+      <rect x="350" y="446" width="25" height="8" fill="#ffaa00" rx="1"/>
+
+      <rect x="1160" y="405" width="35" height="60" fill="#3a3a3a" stroke="#1a1a1a" stroke-width="1" rx="3"/>
+      <rect x="1165" y="410" width="25" height="8" fill="#ffaa00" rx="1"/>
+      <rect x="1165" y="422" width="25" height="8" fill="#ffaa00" rx="1"/>
+      <rect x="1165" y="434" width="25" height="8" fill="#ffaa00" rx="1"/>
+      <rect x="1165" y="446" width="25" height="8" fill="#ffaa00" rx="1"/>
+
+      <circle cx="365" cy="435" r="40" fill="url(#fiberGlow)" opacity="0.5"/>
+      <circle cx="1177" cy="435" r="40" fill="url(#fiberGlow)" opacity="0.5"/>
+
+      <text x="290" y="385" fill="#ffe082" font-size="11">→ 接交换机</text>
+      <text x="1140" y="385" fill="#ffe082" font-size="11">→ 接其他节点</text>
+    </g>
+
+    <!-- ⑨ 液冷散热盖板 -->
+    <g filter="url(#dropShadow)" opacity="0.95">
+      <polygon points="440,290 1000,290 1130,210 570,210" fill="url(#coolerTop)" stroke="#5a6478" stroke-width="1.2"/>
+      <polygon points="440,290 1000,290 1000,315 440,315" fill="#7a8398" stroke="#4a5060" stroke-width="0.8"/>
+      <polygon points="1000,290 1130,210 1130,235 1000,315" fill="#5a6478"/>
+      <path d="M 520 255 Q 720 215 920 255" stroke="#3a78b5" stroke-width="6" fill="none" opacity="0.85"/>
+      <path d="M 520 255 Q 720 215 920 255" stroke="#5fa8dd" stroke-width="3" fill="none" opacity="0.95"/>
+      <path d="M 530 275 Q 720 235 910 275" stroke="#3a78b5" stroke-width="6" fill="none" opacity="0.85"/>
+      <path d="M 530 275 Q 720 235 910 275" stroke="#5fa8dd" stroke-width="3" fill="none" opacity="0.95"/>
+      <circle cx="515" cy="255" r="8" fill="#1a4a78" stroke="#0a2540" stroke-width="1"/>
+      <circle cx="925" cy="255" r="8" fill="#1a4a78" stroke="#0a2540" stroke-width="1"/>
+      <circle cx="515" cy="255" r="4" fill="#5fa8dd"/>
+      <circle cx="925" cy="255" r="4" fill="#5fa8dd"/>
+    </g>
+
+    <!-- 玻璃基板（替代方案）独立侧栏 -->
+    <g transform="translate(1240, 820)">
+      <rect x="-10" y="-25" width="160" height="120" fill="rgba(95,181,208,0.08)" stroke="#5fb5d0" stroke-width="1.5" stroke-dasharray="4,3" rx="6"/>
+      <text x="70" y="-5" fill="#5fb5d0" font-size="12" font-weight="bold" text-anchor="middle">载板下一代方案</text>
+      <polygon points="20,15 110,15 130,0 40,0" fill="url(#glassTop)" stroke="#5fb5d0" stroke-width="1.2"/>
+      <polygon points="20,15 110,15 110,23 20,23" fill="#3a90b0" opacity="0.6"/>
+      <polygon points="110,15 130,0 130,8 110,23" fill="#2a7090" opacity="0.6"/>
+      <text x="70" y="50" fill="#88c8e8" font-size="11" font-weight="bold" text-anchor="middle">玻璃基板</text>
+      <text x="70" y="68" fill="#a8d8e8" font-size="10" text-anchor="middle">替代ABF · 平整度更高</text>
+      <text x="70" y="83" fill="#a8d8e8" font-size="10" text-anchor="middle">CTE匹配硅 · TGV密度更大</text>
+    </g>
+
+    <!-- 装配方向 -->
+    <g transform="translate(1325, 250)">
+      <path d="M 0 0 L 0 800" stroke="#4fc3f7" stroke-width="2" stroke-dasharray="5,3" opacity="0.6"/>
+      <polygon points="-6,790 6,790 0,800" fill="#4fc3f7" opacity="0.8"/>
+      <text x="-12" y="-8" fill="#4fc3f7" font-size="11" font-weight="bold">装配方向</text>
+      <text x="-3" y="820" fill="#4fc3f7" font-size="11" font-weight="bold">↓</text>
+    </g>
+  </svg>
+  </div>
+
+  <div class="note">
+    <strong style="color:#ffd54f;">关键观察：</strong>
+    GPU这块"明星组件"其实只占整个堆叠的极小一块（中间黑色那块），它周围有大量"配套结构"——下面是层层的载板和PCB提供电源和信号扇出，旁边是HBM内存供数据，外围是CPO进行光电转换，上面是液冷板带走热量。<strong style="color:#81c784;">每一层都是必不可少的，缺哪一层AI芯片都跑不起来</strong>。
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 第二部分：剖面图 -->
+<!-- ============================================================ -->
+<div class="section">
+  <h2>② 侧面剖视图 —— 各层厚度比例与组装关系</h2>
+  <p class="description">
+    把封装从侧面切开看，能更清楚地看到层与层之间是怎么"堆"起来的。
+    注意厚度比例：PCB最厚（约2-3mm）、载板次之（约1mm）、芯片最薄（&lt;1mm）。
+    BGA焊球和C4微凸点的尺寸差异也很明显——前者约500μm，后者只有几十μm。
+  </p>
+
+  <div class="svg-wrap">
+  <svg viewBox="0 0 1400 700" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="pcbLayers" patternUnits="userSpaceOnUse" width="100" height="6">
+        <rect width="100" height="6" fill="#0a5530"/>
+        <line x1="0" y1="3" x2="100" y2="3" stroke="#063820" stroke-width="0.3"/>
+        <line x1="0" y1="6" x2="100" y2="6" stroke="#063820" stroke-width="0.5"/>
+      </pattern>
+    </defs>
+
+    <!-- 标题 -->
+    <text x="500" y="35" fill="#4fc3f7" font-size="20" font-weight="bold" text-anchor="middle">侧面剖视图（厚度近似按比例）</text>
+    <text x="500" y="58" fill="#8a9bb4" font-size="12" text-anchor="middle">主结构在左半部分 · 标签和说明在右半部分</text>
+
+    <!-- ====== 主结构（左半部分，x: 100-820） ====== -->
+
+    <!-- ⑨ 液冷盖板 -->
+    <rect x="200" y="115" width="540" height="35" fill="#9aa5b8" stroke="#5a6478" stroke-width="1.5"/>
+    <rect x="200" y="115" width="540" height="6" fill="#d8dde5"/>
+    <ellipse cx="350" cy="135" rx="22" ry="8" fill="#1a4a78"/>
+    <ellipse cx="500" cy="135" rx="22" ry="8" fill="#1a4a78"/>
+    <ellipse cx="650" cy="135" rx="22" ry="8" fill="#1a4a78"/>
+    <ellipse cx="350" cy="135" rx="14" ry="5" fill="#5fa8dd"/>
+    <ellipse cx="500" cy="135" rx="14" ry="5" fill="#5fa8dd"/>
+    <ellipse cx="650" cy="135" rx="14" ry="5" fill="#5fa8dd"/>
+
+    <!-- TIM -->
+    <rect x="290" y="150" width="370" height="6" fill="#c0a060" stroke="#8a7040" stroke-width="0.5"/>
+
+    <!-- HBM 左 -->
+    <g>
+      <rect x="290" y="156" width="80" height="65" fill="#3a4055" stroke="#1a1f2e" stroke-width="1"/>
+      <line x1="290" y1="166" x2="370" y2="166" stroke="#5a6478" stroke-width="0.4"/>
+      <line x1="290" y1="174" x2="370" y2="174" stroke="#5a6478" stroke-width="0.4"/>
+      <line x1="290" y1="182" x2="370" y2="182" stroke="#5a6478" stroke-width="0.4"/>
+      <line x1="290" y1="190" x2="370" y2="190" stroke="#5a6478" stroke-width="0.4"/>
+      <line x1="290" y1="198" x2="370" y2="198" stroke="#5a6478" stroke-width="0.4"/>
+      <line x1="290" y1="206" x2="370" y2="206" stroke="#5a6478" stroke-width="0.4"/>
+      <line x1="290" y1="214" x2="370" y2="214" stroke="#5a6478" stroke-width="0.4"/>
+      <text x="330" y="195" fill="#a5b8d0" font-size="10" text-anchor="middle" font-weight="bold">HBM</text>
+    </g>
+
+    <!-- GPU -->
+    <rect x="385" y="156" width="190" height="55" fill="url(#gpuTop)" stroke="#0a0e15" stroke-width="1.5"/>
+    <text x="480" y="190" fill="#ffd700" font-size="14" text-anchor="middle" font-weight="bold">GPU Die</text>
+
+    <!-- HBM 右 -->
+    <g>
+      <rect x="590" y="156" width="80" height="65" fill="#3a4055" stroke="#1a1f2e" stroke-width="1"/>
+      <line x1="590" y1="166" x2="670" y2="166" stroke="#5a6478" stroke-width="0.4"/>
+      <line x1="590" y1="174" x2="670" y2="174" stroke="#5a6478" stroke-width="0.4"/>
+      <line x1="590" y1="182" x2="670" y2="182" stroke="#5a6478" stroke-width="0.4"/>
+      <line x1="590" y1="190" x2="670" y2="190" stroke="#5a6478" stroke-width="0.4"/>
+      <line x1="590" y1="198" x2="670" y2="198" stroke="#5a6478" stroke-width="0.4"/>
+      <line x1="590" y1="206" x2="670" y2="206" stroke="#5a6478" stroke-width="0.4"/>
+      <line x1="590" y1="214" x2="670" y2="214" stroke="#5a6478" stroke-width="0.4"/>
+      <text x="630" y="195" fill="#a5b8d0" font-size="10" text-anchor="middle" font-weight="bold">HBM</text>
+    </g>
+
+    <!-- C4 微凸点 -->
+    <g>
+      <circle cx="305" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="320" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="335" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="350" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="365" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="385" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="405" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="425" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="445" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="465" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="485" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="505" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="525" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="545" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="565" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="585" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="605" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="625" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="645" cy="225" r="2.5" fill="#dcdcdc"/>
+      <circle cx="665" cy="225" r="2.5" fill="#dcdcdc"/>
+    </g>
+
+    <!-- 硅中介层 -->
+    <rect x="280" y="232" width="400" height="20" fill="url(#interTop)" stroke="#3a3f4a" stroke-width="1"/>
+    <text x="480" y="247" fill="#e0e0e0" font-size="10" text-anchor="middle" font-weight="bold">硅中介层 (Silicon Interposer / CoWoS)</text>
+
+    <!-- IC 载板 -->
+    <rect x="230" y="252" width="500" height="55" fill="url(#subTop)" stroke="#7a5a35" stroke-width="1.2"/>
+    <g opacity="0.55">
+      <line x1="235" y1="262" x2="725" y2="262" stroke="#5a3d20" stroke-width="0.4"/>
+      <line x1="235" y1="270" x2="725" y2="270" stroke="#5a3d20" stroke-width="0.4"/>
+      <line x1="235" y1="278" x2="725" y2="278" stroke="#5a3d20" stroke-width="0.4"/>
+      <line x1="235" y1="286" x2="725" y2="286" stroke="#5a3d20" stroke-width="0.4"/>
+      <line x1="235" y1="294" x2="725" y2="294" stroke="#5a3d20" stroke-width="0.4"/>
+      <line x1="235" y1="302" x2="725" y2="302" stroke="#5a3d20" stroke-width="0.4"/>
+      <line x1="350" y1="252" x2="350" y2="307" stroke="#3a2510" stroke-width="0.6"/>
+      <line x1="500" y1="252" x2="500" y2="307" stroke="#3a2510" stroke-width="0.6"/>
+      <line x1="600" y1="252" x2="600" y2="307" stroke="#3a2510" stroke-width="0.6"/>
+    </g>
+    <text x="480" y="284" fill="#3a2510" font-size="12" text-anchor="middle" font-weight="bold">IC 载板 (ABF Substrate)</text>
+
+    <!-- BGA -->
+    <g>
+      <circle cx="245" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="275" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="305" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="335" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="365" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="395" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="425" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="455" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="485" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="515" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="545" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="575" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="605" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="635" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="665" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="695" cy="320" r="6" fill="#c0c0c0"/>
+      <circle cx="725" cy="320" r="6" fill="#c0c0c0"/>
+    </g>
+
+    <!-- PCB -->
+    <g>
+      <rect x="100" y="332" width="780" height="80" fill="url(#pcbLayers)" stroke="#063820" stroke-width="1.5"/>
+      <line x1="100" y1="340" x2="880" y2="340" stroke="#1a8050" stroke-width="0.6" opacity="0.7"/>
+      <line x1="100" y1="350" x2="880" y2="350" stroke="#1a8050" stroke-width="0.6" opacity="0.7"/>
+      <line x1="100" y1="360" x2="880" y2="360" stroke="#1a8050" stroke-width="0.6" opacity="0.7"/>
+      <line x1="100" y1="370" x2="880" y2="370" stroke="#1a8050" stroke-width="0.6" opacity="0.7"/>
+      <line x1="100" y1="380" x2="880" y2="380" stroke="#1a8050" stroke-width="0.6" opacity="0.7"/>
+      <line x1="100" y1="390" x2="880" y2="390" stroke="#1a8050" stroke-width="0.6" opacity="0.7"/>
+      <line x1="100" y1="400" x2="880" y2="400" stroke="#1a8050" stroke-width="0.6" opacity="0.7"/>
+      <line x1="160" y1="332" x2="160" y2="412" stroke="#063820" stroke-width="1"/>
+      <line x1="220" y1="332" x2="220" y2="412" stroke="#063820" stroke-width="1"/>
+      <line x1="780" y1="332" x2="780" y2="412" stroke="#063820" stroke-width="1"/>
+      <line x1="840" y1="332" x2="840" y2="412" stroke="#063820" stroke-width="1"/>
+      <text x="480" y="380" fill="#a5d6a7" font-size="14" text-anchor="middle" font-weight="bold">PCB 主板（32-40层堆叠）</text>
+    </g>
+
+    <!-- PCB 上的电源VRM -->
+    <g>
+      <rect x="120" y="305" width="80" height="25" fill="#1a3a5a" stroke="#0a2540" stroke-width="1"/>
+      <text x="160" y="322" fill="#88aadd" font-size="10" text-anchor="middle" font-weight="bold">电源VRM</text>
+      <rect x="760" y="305" width="80" height="25" fill="#1a3a5a" stroke="#0a2540" stroke-width="1"/>
+      <text x="800" y="322" fill="#88aadd" font-size="10" text-anchor="middle" font-weight="bold">电源VRM</text>
+    </g>
+
+    <!-- MLCC -->
+    <g>
+      <rect x="210" y="320" width="6" height="10" fill="#8b6f3a"/>
+      <rect x="220" y="320" width="6" height="10" fill="#8b6f3a"/>
+      <rect x="230" y="320" width="6" height="10" fill="#8b6f3a"/>
+      <rect x="740" y="320" width="6" height="10" fill="#8b6f3a"/>
+      <rect x="750" y="320" width="6" height="10" fill="#8b6f3a"/>
+      <rect x="760" y="320" width="6" height="10" fill="#8b6f3a"/>
+    </g>
+
+    <!-- ====== CPO + 光纤（剖视图侧面） - 单独区域，不与主结构重叠 ====== -->
+    <g>
+      <!-- 左侧 CPO 在主结构边上 -->
+      <rect x="200" y="222" width="35" height="32" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1"/>
+      <circle cx="210" cy="232" r="1.5" fill="#ffaa44"/>
+      <circle cx="220" cy="232" r="1.5" fill="#ffaa44"/>
+      <circle cx="230" cy="232" r="1.5" fill="#ffaa44"/>
+      <text x="217" y="246" fill="#e0a8ff" font-size="8" text-anchor="middle" font-weight="bold">CPO</text>
+      <!-- 光纤 -->
+      <path d="M 200 232 Q 145 215 95 235" stroke="#ffaa00" stroke-width="2.5" fill="none" opacity="0.9"/>
+      <path d="M 200 240 Q 140 230 90 250" stroke="#ffcc44" stroke-width="2.5" fill="none" opacity="0.9"/>
+      <path d="M 200 248 Q 135 250 88 270" stroke="#ffaa00" stroke-width="2.5" fill="none" opacity="0.9"/>
+      <rect x="65" y="225" width="22" height="55" fill="#3a3a3a" stroke="#1a1a1a" stroke-width="1" rx="2"/>
+      <rect x="68" y="232" width="16" height="6" fill="#ffaa00"/>
+      <rect x="68" y="244" width="16" height="6" fill="#ffaa00"/>
+      <rect x="68" y="256" width="16" height="6" fill="#ffaa00"/>
+
+      <!-- 右侧 CPO -->
+      <rect x="745" y="222" width="35" height="32" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1"/>
+      <circle cx="752" cy="232" r="1.5" fill="#ffaa44"/>
+      <circle cx="762" cy="232" r="1.5" fill="#ffaa44"/>
+      <circle cx="772" cy="232" r="1.5" fill="#ffaa44"/>
+      <text x="762" y="246" fill="#e0a8ff" font-size="8" text-anchor="middle" font-weight="bold">CPO</text>
+      <path d="M 780 232 Q 825 215 875 235" stroke="#ffaa00" stroke-width="2.5" fill="none" opacity="0.9"/>
+      <path d="M 780 240 Q 830 230 880 250" stroke="#ffcc44" stroke-width="2.5" fill="none" opacity="0.9"/>
+      <path d="M 780 248 Q 835 250 882 270" stroke="#ffaa00" stroke-width="2.5" fill="none" opacity="0.9"/>
+      <rect x="883" y="225" width="22" height="55" fill="#3a3a3a" stroke="#1a1a1a" stroke-width="1" rx="2"/>
+      <rect x="886" y="232" width="16" height="6" fill="#ffaa00"/>
+      <rect x="886" y="244" width="16" height="6" fill="#ffaa00"/>
+      <rect x="886" y="256" width="16" height="6" fill="#ffaa00"/>
+    </g>
+
+    <!-- ====== 右侧标签列（x: 920-1380） ====== -->
+    <!-- ⑨ 液冷盖板 -->
+    <line x1="740" y1="132" x2="920" y2="132" stroke="#9aa5b8" stroke-width="0.7" stroke-dasharray="3,2"/>
+    <text x="930" y="128" fill="#9aa5b8" font-size="14" font-weight="bold">⑨ 液冷盖板</text>
+    <text x="930" y="146" fill="#c5cdd9" font-size="11">~3mm厚 · 紧贴芯片</text>
+
+    <!-- TIM -->
+    <line x1="660" y1="153" x2="920" y2="170" stroke="#c0a060" stroke-width="0.7" stroke-dasharray="3,2"/>
+    <text x="930" y="167" fill="#c0a060" font-size="12" font-weight="bold">TIM 导热界面材料</text>
+
+    <!-- ⑥ GPU + HBM -->
+    <line x1="670" y1="190" x2="920" y2="200" stroke="#ffd700" stroke-width="0.7" stroke-dasharray="3,2"/>
+    <text x="930" y="195" fill="#ffd700" font-size="14" font-weight="bold">⑥ GPU + HBM</text>
+    <text x="930" y="213" fill="#c5cdd9" font-size="11">芯片厚度 0.5-1mm</text>
+
+    <!-- ④ C4 微凸点 -->
+    <line x1="665" y1="225" x2="920" y2="232" stroke="#cccccc" stroke-width="0.7" stroke-dasharray="3,2"/>
+    <text x="930" y="232" fill="#cccccc" font-size="13" font-weight="bold">④ C4 微凸点 ~50μm</text>
+    <text x="930" y="248" fill="#c5cdd9" font-size="11">头发丝直径量级</text>
+
+    <!-- ⑤ 硅中介层 -->
+    <line x1="680" y1="245" x2="920" y2="265" stroke="#88c8e8" stroke-width="0.7" stroke-dasharray="3,2"/>
+    <text x="930" y="263" fill="#88c8e8" font-size="13" font-weight="bold">⑤ 硅中介层</text>
+    <text x="930" y="280" fill="#c5cdd9" font-size="11">含TSV穿硅孔 · 0.1mm厚</text>
+
+    <!-- ③ IC载板 -->
+    <line x1="730" y1="282" x2="920" y2="297" stroke="#d9b88a" stroke-width="0.7" stroke-dasharray="3,2"/>
+    <text x="930" y="295" fill="#d9b88a" font-size="14" font-weight="bold">③ IC 载板（ABF）</text>
+    <text x="930" y="313" fill="#c5cdd9" font-size="11">10-20层积层 · 总厚约1mm</text>
+
+    <!-- ② BGA -->
+    <line x1="725" y1="322" x2="920" y2="328" stroke="#c0c0c0" stroke-width="0.7" stroke-dasharray="3,2"/>
+    <text x="930" y="328" fill="#c0c0c0" font-size="13" font-weight="bold">② BGA 焊球</text>
+    <text x="930" y="345" fill="#c5cdd9" font-size="11">~500μm · 数千个</text>
+
+    <!-- ① PCB主板 -->
+    <line x1="880" y1="370" x2="920" y2="370" stroke="#81c784" stroke-width="0.7" stroke-dasharray="3,2"/>
+    <text x="930" y="365" fill="#81c784" font-size="14" font-weight="bold">① PCB 主板</text>
+    <text x="930" y="383" fill="#c5cdd9" font-size="11">2-3mm厚 · M6/M7级CCL</text>
+    <text x="930" y="398" fill="#c5cdd9" font-size="11">最厚的一层</text>
+
+    <!-- CPO + 光纤 -->
+    <text x="930" y="425" fill="#ffd54f" font-size="13" font-weight="bold">⑦⑧ CPO + 光纤</text>
+    <text x="930" y="442" fill="#c5cdd9" font-size="11">侧边伸出 · 不在主堆叠中</text>
+
+    <!-- ====== 厚度对比 + 信号路径（底部） ====== -->
+    <g transform="translate(80, 470)">
+      <text x="0" y="0" fill="#4fc3f7" font-size="14" font-weight="bold">▼ 厚度对比（粗略示意）</text>
+      <g transform="translate(0, 28)" font-size="11">
+        <rect x="0" y="0" width="22" height="3" fill="#9aa5b8"/>
+        <text x="32" y="3" fill="#c5cdd9">液冷盖板 3mm</text>
+
+        <rect x="170" y="0" width="6" height="3" fill="#3a4055"/>
+        <text x="182" y="3" fill="#c5cdd9">GPU/HBM 0.5-1mm</text>
+
+        <rect x="335" y="0" width="2" height="3" fill="url(#interTop)"/>
+        <text x="343" y="3" fill="#c5cdd9">硅中介层 0.1mm</text>
+
+        <rect x="490" y="0" width="7" height="3" fill="url(#subTop)"/>
+        <text x="503" y="3" fill="#c5cdd9">IC载板 1mm</text>
+
+        <rect x="630" y="0" width="22" height="3" fill="url(#pcbLayers)"/>
+        <text x="660" y="3" fill="#c5cdd9">PCB主板 2-3mm（最厚）</text>
+      </g>
+      <g transform="translate(0, 65)" font-size="11">
+        <text x="0" y="0" fill="#ffd54f" font-weight="bold" font-size="12">连接尺度对比：</text>
+        <text x="0" y="20" fill="#c5cdd9">• BGA焊球 ~500μm（肉眼可见）</text>
+        <text x="240" y="20" fill="#c5cdd9">• C4微凸点 ~50μm（头发丝量级）</text>
+        <text x="490" y="20" fill="#c5cdd9">• 载板线宽 ~10μm（半导体后道工艺级）</text>
+      </g>
+    </g>
+
+    <g transform="translate(80, 615)">
+      <rect x="0" y="0" width="1240" height="55" fill="rgba(255,213,79,0.08)" stroke="#ffd54f" stroke-width="1" rx="6"/>
+      <text x="20" y="22" fill="#ffd54f" font-size="13" font-weight="bold">⚡ 信号路径示例（电信号从外部进入GPU走的路）：</text>
+      <text x="20" y="42" fill="#e0e6ed" font-size="12">高速连接器/光纤 → CPO光电转换 → 载板内层走线 → C4微凸点 → 硅中介层 → 微凸点 → GPU Die</text>
+    </g>
+  </svg>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 第三部分：俯视图 -->
+<!-- ============================================================ -->
+<div class="section">
+  <h2>③ 俯视图 —— 载板上的组件平面布局</h2>
+  <p class="description">
+    把封装从正上方往下看，能看到一块约110×110mm的载板上"住"了哪些组件，怎么排布的。
+    GPU在中央，HBM内存堆栈紧贴GPU两侧（信号路径最短），CPO光引擎围绕GPU四周布置（光信号只能短距离传输到光纤接出口）。
+  </p>
+
+  <div class="svg-wrap">
+  <svg viewBox="0 0 1100 980" xmlns="http://www.w3.org/2000/svg">
+    <!-- 顶部光纤接出标签（专属区域，y: 0-90） -->
+    <g>
+      <text x="550" y="30" fill="#ffaa00" font-size="14" font-weight="bold" text-anchor="middle">↑ 光纤接出（接交换机）</text>
+      <text x="550" y="50" fill="#ffe082" font-size="11" text-anchor="middle">高速数据通过光纤离开封装，进入数据中心网络</text>
+    </g>
+
+    <!-- 顶部光纤束（y: 60-120） -->
+    <g opacity="0.85">
+      <path d="M 232 180 L 240 70" stroke="#ffaa00" stroke-width="2.5" fill="none"/>
+      <path d="M 322 180 L 330 70" stroke="#ffcc44" stroke-width="2.5" fill="none"/>
+      <path d="M 412 180 L 420 70" stroke="#ffaa00" stroke-width="2.5" fill="none"/>
+      <path d="M 587 180 L 580 70" stroke="#ffcc44" stroke-width="2.5" fill="none"/>
+      <path d="M 677 180 L 670 70" stroke="#ffaa00" stroke-width="2.5" fill="none"/>
+      <path d="M 767 180 L 760 70" stroke="#ffcc44" stroke-width="2.5" fill="none"/>
+    </g>
+
+    <!-- 载板边界 -->
+    <rect x="150" y="170" width="700" height="600" fill="#c8a27a" stroke="#7a5a35" stroke-width="3" rx="8"/>
+    <text x="500" y="158" fill="#ffd54f" font-size="16" font-weight="bold" text-anchor="middle">IC 载板（约 110 × 110 mm）</text>
+
+    <!-- 中央 GPU 区 -->
+    <rect x="370" y="350" width="260" height="240" fill="url(#gpuTop)" stroke="#0a0e15" stroke-width="2" rx="4"/>
+    <text x="500" y="465" fill="#ffd700" font-size="22" font-weight="bold" text-anchor="middle">GPU Die</text>
+    <text x="500" y="490" fill="#a5b8d0" font-size="13" text-anchor="middle">（多Chiplet设计）</text>
+    <g opacity="0.4">
+      <line x1="500" y1="350" x2="500" y2="590" stroke="#0a0e15" stroke-width="1"/>
+      <text x="435" y="380" fill="#888" font-size="11" text-anchor="middle" font-weight="bold">Chiplet 1</text>
+      <text x="565" y="380" fill="#888" font-size="11" text-anchor="middle" font-weight="bold">Chiplet 2</text>
+    </g>
+
+    <!-- 左侧 HBM -->
+    <g>
+      <rect x="270" y="350" width="80" height="60" fill="#3a4055" stroke="#1a1f2e" stroke-width="1.5" rx="2"/>
+      <text x="310" y="385" fill="#a5b8d0" font-size="13" text-anchor="middle" font-weight="bold">HBM 0</text>
+      <rect x="270" y="420" width="80" height="60" fill="#3a4055" stroke="#1a1f2e" stroke-width="1.5" rx="2"/>
+      <text x="310" y="455" fill="#a5b8d0" font-size="13" text-anchor="middle" font-weight="bold">HBM 1</text>
+      <rect x="270" y="490" width="80" height="60" fill="#3a4055" stroke="#1a1f2e" stroke-width="1.5" rx="2"/>
+      <text x="310" y="525" fill="#a5b8d0" font-size="13" text-anchor="middle" font-weight="bold">HBM 2</text>
+      <rect x="270" y="560" width="80" height="60" fill="#3a4055" stroke="#1a1f2e" stroke-width="1.5" rx="2"/>
+      <text x="310" y="595" fill="#a5b8d0" font-size="13" text-anchor="middle" font-weight="bold">HBM 3</text>
+    </g>
+
+    <!-- 右侧 HBM -->
+    <g>
+      <rect x="650" y="350" width="80" height="60" fill="#3a4055" stroke="#1a1f2e" stroke-width="1.5" rx="2"/>
+      <text x="690" y="385" fill="#a5b8d0" font-size="13" text-anchor="middle" font-weight="bold">HBM 4</text>
+      <rect x="650" y="420" width="80" height="60" fill="#3a4055" stroke="#1a1f2e" stroke-width="1.5" rx="2"/>
+      <text x="690" y="455" fill="#a5b8d0" font-size="13" text-anchor="middle" font-weight="bold">HBM 5</text>
+      <rect x="650" y="490" width="80" height="60" fill="#3a4055" stroke="#1a1f2e" stroke-width="1.5" rx="2"/>
+      <text x="690" y="525" fill="#a5b8d0" font-size="13" text-anchor="middle" font-weight="bold">HBM 6</text>
+      <rect x="650" y="560" width="80" height="60" fill="#3a4055" stroke="#1a1f2e" stroke-width="1.5" rx="2"/>
+      <text x="690" y="595" fill="#a5b8d0" font-size="13" text-anchor="middle" font-weight="bold">HBM 7</text>
+    </g>
+
+    <!-- HBM 标签 -->
+    <text x="310" y="335" fill="#a5b8d0" font-size="12" font-weight="bold" text-anchor="middle">4× HBM 内存</text>
+    <text x="690" y="335" fill="#a5b8d0" font-size="12" font-weight="bold" text-anchor="middle">4× HBM 内存</text>
+
+    <!-- 顶部 CPO -->
+    <g>
+      <rect x="200" y="200" width="65" height="40" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1.5" rx="3"/>
+      <text x="232" y="225" fill="#e0a8ff" font-size="11" text-anchor="middle" font-weight="bold">CPO</text>
+      <rect x="290" y="200" width="65" height="40" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1.5" rx="3"/>
+      <text x="322" y="225" fill="#e0a8ff" font-size="11" text-anchor="middle" font-weight="bold">CPO</text>
+      <rect x="380" y="200" width="65" height="40" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1.5" rx="3"/>
+      <text x="412" y="225" fill="#e0a8ff" font-size="11" text-anchor="middle" font-weight="bold">CPO</text>
+      <rect x="555" y="200" width="65" height="40" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1.5" rx="3"/>
+      <text x="587" y="225" fill="#e0a8ff" font-size="11" text-anchor="middle" font-weight="bold">CPO</text>
+      <rect x="645" y="200" width="65" height="40" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1.5" rx="3"/>
+      <text x="677" y="225" fill="#e0a8ff" font-size="11" text-anchor="middle" font-weight="bold">CPO</text>
+      <rect x="735" y="200" width="65" height="40" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1.5" rx="3"/>
+      <text x="767" y="225" fill="#e0a8ff" font-size="11" text-anchor="middle" font-weight="bold">CPO</text>
+    </g>
+    <text x="500" y="290" fill="#e0a8ff" font-size="13" font-weight="bold" text-anchor="middle">━━━ 6× CPO 光引擎（顶部排）━━━</text>
+
+    <!-- 底部 CPO -->
+    <g>
+      <rect x="200" y="700" width="65" height="40" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1.5" rx="3"/>
+      <text x="232" y="725" fill="#e0a8ff" font-size="11" text-anchor="middle" font-weight="bold">CPO</text>
+      <rect x="290" y="700" width="65" height="40" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1.5" rx="3"/>
+      <text x="322" y="725" fill="#e0a8ff" font-size="11" text-anchor="middle" font-weight="bold">CPO</text>
+      <rect x="380" y="700" width="65" height="40" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1.5" rx="3"/>
+      <text x="412" y="725" fill="#e0a8ff" font-size="11" text-anchor="middle" font-weight="bold">CPO</text>
+      <rect x="555" y="700" width="65" height="40" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1.5" rx="3"/>
+      <text x="587" y="725" fill="#e0a8ff" font-size="11" text-anchor="middle" font-weight="bold">CPO</text>
+      <rect x="645" y="700" width="65" height="40" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1.5" rx="3"/>
+      <text x="677" y="725" fill="#e0a8ff" font-size="11" text-anchor="middle" font-weight="bold">CPO</text>
+      <rect x="735" y="700" width="65" height="40" fill="url(#cpoTop)" stroke="#1a0f2a" stroke-width="1.5" rx="3"/>
+      <text x="767" y="725" fill="#e0a8ff" font-size="11" text-anchor="middle" font-weight="bold">CPO</text>
+    </g>
+    <text x="500" y="688" fill="#e0a8ff" font-size="13" font-weight="bold" text-anchor="middle">━━━ 6× CPO 光引擎（底部排）━━━</text>
+
+    <!-- 底部光纤束 -->
+    <g opacity="0.85">
+      <path d="M 232 740 L 240 870" stroke="#ffaa00" stroke-width="2.5" fill="none"/>
+      <path d="M 322 740 L 330 870" stroke="#ffcc44" stroke-width="2.5" fill="none"/>
+      <path d="M 412 740 L 420 870" stroke="#ffaa00" stroke-width="2.5" fill="none"/>
+      <path d="M 587 740 L 580 870" stroke="#ffcc44" stroke-width="2.5" fill="none"/>
+      <path d="M 677 740 L 670 870" stroke="#ffaa00" stroke-width="2.5" fill="none"/>
+      <path d="M 767 740 L 760 870" stroke="#ffcc44" stroke-width="2.5" fill="none"/>
+    </g>
+
+    <!-- 底部光纤接出标签 -->
+    <g>
+      <text x="550" y="905" fill="#ffaa00" font-size="14" font-weight="bold" text-anchor="middle">↓ 光纤接出（接其他GPU节点）</text>
+      <text x="550" y="925" fill="#ffe082" font-size="11" text-anchor="middle">机柜内或机柜间的GPU之间通过光纤直连</text>
+    </g>
+
+    <!-- 信号路径箭头（GPU↔HBM） -->
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#ff6644"/>
+      </marker>
+    </defs>
+    <g opacity="0.7">
+      <path d="M 350 470 L 370 470" stroke="#ff6644" stroke-width="2" marker-end="url(#arrow)"/>
+      <path d="M 650 470 L 630 470" stroke="#ff6644" stroke-width="2" marker-end="url(#arrow)"/>
+      <text x="360" y="463" fill="#ff8866" font-size="9" font-weight="bold">高带宽</text>
+    </g>
+  </svg>
+  </div>
+
+  <!-- 布局逻辑（移出SVG，作为HTML卡片呈现） -->
+  <div class="layout-logic">
+    <div class="logic-card">
+      <strong><span class="num">1</span>GPU 居中</strong>
+      <p>GPU放在载板正中央，到所有HBM和CPO的距离最短，能最大化数据吞吐效率。</p>
+    </div>
+    <div class="logic-card">
+      <strong><span class="num">2</span>HBM 紧贴 GPU 两侧</strong>
+      <p>HBM和GPU的距离决定内存带宽——距离越近，链路损耗越小、能效越高。这就是HBM要"贴脸"放的原因。</p>
+    </div>
+    <div class="logic-card">
+      <strong><span class="num">3</span>CPO 沿载板边缘</strong>
+      <p>CPO要让光纤直接从外侧接出，放在边缘最方便。同时光信号短距离传到GPU，减少光电转换的功耗。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 第四部分：组件功能词典 -->
+<!-- ============================================================ -->
+<div class="section">
+  <h2>④ 组件功能词典 —— 每一层在做什么</h2>
+  <p class="description">
+    把上面图里出现的每个核心组件单独拉出来讲一遍：物理位置、核心功能、行业玩家、技术壁垒。
+  </p>
+
+  <div class="glossary">
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#0e6e3e;"></span>① PCB 主板</h3>
+      <p>
+        最底层，整个系统的"地基"。提供机械支撑、电源传输、低速控制信号路由。
+        AI服务器主板做到 32-40 层，用 M6/M7 级覆铜板。<br>
+        <strong>价值量</strong>：单板 5000-10000 美元
+      </p>
+      <span class="tag">国内龙头：沪电、深南、胜宏、鹏鼎</span>
+    </div>
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#c0c0c0;"></span>② BGA 焊球</h3>
+      <p>
+        载板与PCB之间的电气和机械连接。直径约500μm，肉眼可见，一块封装下方有数千个。
+        SAC305锡银铜合金最常见。<br>
+        <strong>关键作用</strong>：实现载板"插"到主板上的可拆卸性
+      </p>
+      <span class="tag">这是BGA封装的得名来源</span>
+    </div>
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#d9b88a;"></span>③ IC 载板（ABF Substrate）</h3>
+      <p>
+        芯片与PCB之间的"信号扇出层"。把芯片侧10μm级的密集焊点，扇出到500μm级的BGA焊球。
+        线宽线距10-15μm，10-20层积层。核心材料是日本味之素的ABF膜。<br>
+        <strong>当前痛点</strong>：超大尺寸（110mm+）翘曲控制、良率
+      </p>
+      <span class="tag">全球：揖斐电、欣兴、AT&S、深南</span>
+    </div>
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#88c8e8;"></span>③' 玻璃基板（替代方案）</h3>
+      <p>
+        ABF载板的下一代替代品。用电子级玻璃替代ABF树脂作为基材。
+        平整度极高、CTE匹配硅、Df更低、TGV密度更大、可做到面板级尺寸。<br>
+        <strong>时间表</strong>：2025-2026 小批量、2027-2028 规模量产
+      </p>
+      <span class="tag">布局：Intel、Samsung、Corning、沃格光电</span>
+    </div>
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#dcdcdc;"></span>④ C4 微凸点</h3>
+      <p>
+        硅中介层与载板之间的连接点。直径约50μm（人头发丝量级），间距100μm。
+        比BGA小一个数量级。<br>
+        <strong>关键作用</strong>：芯片侧的高密度I/O扇出到载板
+      </p>
+      <span class="tag">半导体后道工艺，由封装厂完成</span>
+    </div>
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#7a8290;"></span>⑤ 硅中介层（CoWoS）</h3>
+      <p>
+        台积电主推的高密度封装方案。一块薄硅片（含TSV穿硅孔）承载GPU+HBM，
+        实现Die-to-Die的超高带宽互联（5-10 TB/s）。<br>
+        <strong>核心瓶颈</strong>：台积电CoWoS产能，2024-2026持续紧缺
+      </p>
+      <span class="tag">设计制造：台积电独家</span>
+    </div>
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#3a4055;"></span>⑥ HBM 高带宽内存</h3>
+      <p>
+        AI芯片的"短期记忆"。8-12层DRAM裸片3D堆叠，通过TSV互联。
+        紧贴GPU布置，单堆栈带宽 1.2-1.5 TB/s（HBM3E），单颗GPU配8颗HBM。<br>
+        <strong>当前一代</strong>：HBM3E（8层），下一代 HBM4（12层）2025量产
+      </p>
+      <span class="tag">SK海力士、三星、美光寡头垄断</span>
+    </div>
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#22262e;"></span>⑥ GPU Die（计算芯片）</h3>
+      <p>
+        系统的"大脑"。Nvidia GB200由两颗 Blackwell GPU Die 拼接，
+        每颗约 800mm²，TSMC 4nm工艺，单颗功耗 600W+。<br>
+        <strong>设计</strong>：Nvidia / AMD / 华为 / Google
+      </p>
+      <span class="tag">制造：TSMC 4nm/3nm 独家</span>
+    </div>
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#6a3a8a;"></span>⑦ CPO 光引擎</h3>
+      <p>
+        共封装光学（Co-Packaged Optics）。把光收发器件搬到芯片旁边，
+        实现电信号↔光信号的高速转换。每个CPO模块输出 800G-1.6T 带宽，
+        一颗ASIC周围布置 8-16 个。<br>
+        <strong>2026 年开始大规模商用</strong>
+      </p>
+      <span class="tag">布局：博通、Marvell、Nvidia、思科</span>
+    </div>
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#ffaa00;"></span>⑧ 光纤</h3>
+      <p>
+        从CPO模块接出，连接到机柜内其他节点或机柜间交换机。
+        是当前唯一能在长距离（&gt;1m）下传输 Tbps 级数据的介质。
+        AI集群机柜间几乎100%光纤互联。<br>
+        <strong>下一代</strong>：硅光、共封装光波导
+      </p>
+      <span class="tag">康宁、藤仓、长飞光纤</span>
+    </div>
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#9aa5b8;"></span>⑨ 液冷散热盖板</h3>
+      <p>
+        紧贴芯片顶部，里面有冷却液通道。GB200单卡功耗 1200W+，
+        风冷已无法处理，液冷成为标配。冷板材质多为铜或铝合金。<br>
+        <strong>商业意义</strong>：液冷是2024-2026最大的服务器硬件升级
+      </p>
+      <span class="tag">英维克、高澜、维谛</span>
+    </div>
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#1a3a5a;"></span>电源模块（VRM）</h3>
+      <p>
+        把PCB主板上的48V或12V直流电，转换成GPU所需的0.7-1V低压、上千安培大电流。
+        围绕GPU布置在PCB上。新一代采用"垂直供电"架构，从芯片背面直接喂电。<br>
+        <strong>趋势</strong>：12V→48V→垂直供电
+      </p>
+      <span class="tag">MPS、英飞凌、瑞萨、TI</span>
+    </div>
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#8b6f3a;"></span>MLCC 去耦电容群</h3>
+      <p>
+        围绕GPU密布数百颗，吸收电源的高频纹波，确保芯片瞬态供电稳定。
+        高端AI服务器单板用量上万颗。部分高端设计开始把MLCC埋入PCB或载板内部。<br>
+        <strong>这就是你之前研究过的领域</strong>
+      </p>
+      <span class="tag">村田、TDK、太诱、三星电机</span>
+    </div>
+
+    <div class="item">
+      <h3><span class="colorchip" style="background:#2a3045;"></span>高速连接器</h3>
+      <p>
+        PCB主板边缘的电气连接接口。用于PCIe铜缆、NVLink铜缆、电源进线等。
+        Nvidia NVL72机架内 GPU 之间靠5000多根铜缆+连接器互联。<br>
+        <strong>下一代</strong>：部分被CPO+光纤替代
+      </p>
+      <span class="tag">安费诺、TE Connectivity、莫仕</span>
+    </div>
+
+  </div>
+
+  <div class="note">
+    <strong style="color:#ffd54f;">看完这张图你应该意识到：</strong>
+    所谓"AI芯片"或"GPU"，其实只是中央那块小小的硅片。它能跑起来，依赖的是周围
+    <strong style="color:#a5d6a7;">PCB主板 + IC载板 + 中介层 + HBM + CPO + 液冷盖板 + 数千个被动元件 + 数千根铜缆/光纤</strong>
+    的整个生态系统。<strong style="color:#ff8866;">PCB行业、被动元件行业、连接器行业、光器件行业，本质上是支撑AI芯片运行的"配套基础设施"</strong>——它们的命运和AI算力增长深度绑定，但每一个细分都有自己的护城河和投资逻辑。
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 第五部分：图例颜色对照 -->
+<!-- ============================================================ -->
+<div class="section">
+  <h2>⑤ 颜色图例</h2>
+  <div class="legend-row">
+    <span><span class="colorchip" style="background:#0e6e3e;"></span> PCB主板（FR-4或M级CCL）</span>
+    <span><span class="colorchip" style="background:#d9b88a;"></span> ABF载板（树脂）</span>
+    <span><span class="colorchip" style="background:#88c8e8;"></span> 玻璃基板</span>
+    <span><span class="colorchip" style="background:#7a8290;"></span> 硅中介层</span>
+    <span><span class="colorchip" style="background:#22262e;"></span> GPU Die</span>
+    <span><span class="colorchip" style="background:#3a4055;"></span> HBM</span>
+    <span><span class="colorchip" style="background:#6a3a8a;"></span> CPO 光引擎</span>
+    <span><span class="colorchip" style="background:#ffaa00;"></span> 光纤</span>
+    <span><span class="colorchip" style="background:#9aa5b8;"></span> 液冷盖板</span>
+    <span><span class="colorchip" style="background:#c0c0c0;"></span> BGA / 焊球</span>
+    <span><span class="colorchip" style="background:#1a3a5a;"></span> 电源模块</span>
+    <span><span class="colorchip" style="background:#8b6f3a;"></span> MLCC</span>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
