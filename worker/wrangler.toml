@@ -2,17 +2,37 @@ name = "research-lab-comments"
 main = "src/index.ts"
 compatibility_date = "2026-01-01"
 
-# KV 命名空间绑定 — 部署前用 wrangler 创建并把 id 填进来
-# 命令：npx wrangler kv:namespace create COMMENTS
+# KV 命名空间绑定 — 评论 + monitor 状态共用，monitor 用 `monitor:` 前缀
 [[kv_namespaces]]
 binding = "COMMENTS"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "892d963cecb94725860cbb5efd544727"
+
+# Workers AI 绑定 — 用 bge-m3 做嵌入（多语言、中文友好、免费 10000 neurons/天）
+[ai]
+binding = "AI"
+
+# Vectorize 向量数据库 — 存报告库的语义索引（1024 维，对应 bge-m3 输出）
+# 创建命令：npx wrangler vectorize create reports --dimensions=1024 --metric=cosine
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "reports"
+
+# Cron Triggers：每天 UTC 0:00（北京时间 8:00）跑 timeline 监控
+# 改时间请参考 https://crontab.guru/，注意 Workers 用 UTC
+[triggers]
+crons = ["0 0 * * *"]
 
 [vars]
 # 允许跨域的来源；部署后改成你的网站域名（多个用逗号分隔）
-# 例：ALLOWED_ORIGIN = "https://research-lab.pages.dev,https://yourname.com"
 ALLOWED_ORIGIN = "*"
+# Timeline 数据源；如果换了站点 URL 在这里改
+TIMELINE_JSON_URL = "https://shaun-research.pages.dev/timeline.json"
 
-# ⚠ ADMIN_TOKEN 不要写在这里！用以下命令安全注入：
-#   npx wrangler secret put ADMIN_TOKEN
-#   （会让你输入一次性的强密码，存在 Cloudflare 加密 secret 里）
+# ⚠ 以下 secret 不要写在这里！用 wrangler 命令注入（部署一次即可）：
+#   npx wrangler secret put ADMIN_TOKEN     —— 后台触发 + 删评论 + 写入向量库
+#   npx wrangler secret put SERVERCHAN_KEY  —— Server 酱 SCKEY
+#   npx wrangler secret put PUSHPLUS_TOKEN  —— PushPlus token
+#   npx wrangler secret put RESEND_API_KEY  —— Resend API key
+#   npx wrangler secret put RESEND_FROM     —— 发件人，例 alerts@yourdomain.com
+#   npx wrangler secret put RESEND_TO       —— 收件人，可逗号分隔多个
+#   npx wrangler secret put DEEPSEEK_API_KEY —— DeepSeek API key（platform.deepseek.com）

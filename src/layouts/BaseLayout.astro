@@ -3,6 +3,7 @@ import "../styles/global.css";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import MarketMarquee from "../components/MarketMarquee.tsx";
+import ChatWidget from "../components/ChatWidget.tsx";
 
 interface Props {
   title: string;
@@ -18,6 +19,9 @@ const {
 
 const siteName = "Research Lab";
 const fullTitle = title === siteName ? title : `${title} · ${siteName}`;
+
+// 复用评论用的 Worker URL；同一个 Worker 既处理评论也处理 /chat 端点
+const chatApi = import.meta.env.PUBLIC_COMMENTS_API as string | undefined;
 ---
 
 <!doctype html>
@@ -43,5 +47,6 @@ const fullTitle = title === siteName ? title : `${title} · ${siteName}`;
       <slot />
     </main>
     <Footer />
+    {chatApi && <ChatWidget client:only="react" apiUrl={chatApi} />}
   </body>
 </html>

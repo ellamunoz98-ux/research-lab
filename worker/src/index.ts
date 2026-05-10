@@ -1,6 +1,6 @@
 /**
- * Research.Lab 评论系统后端 + 数据源代理
- * 基于 Cloudflare Workers + KV 存储
+ * Research.Lab 评论系统后端 + 数据源代理 + 申请 Timeline 监控
+ * 基于 Cloudflare Workers + KV 存储 + Cron Triggers
  *
  * 评论端点：
  *   GET  /comments?path=<page>     列出某页评论
@@ -15,19 +15,41 @@
  *   GET  /proxy/er/<path>          → open.er-api.com
  *   GET  /proxy/rss/<path>         → api.rss2json.com
  *
+ * 申请 Timeline 监控：
+ *   - cron 每天 UTC 0:00（北京 8:00）自动跑
+ *   - GET /admin/run-monitor?token=<ADMIN_TOKEN>[&dry=1]  手动触发，dry=1 时不推送
+ *
  * 防滥用：
  *   - 每 IP 每分钟最多 5 条评论
  *   - 名字 ≤ 30 字，正文 ≤ 2000 字
  *   - 简单关键词黑名单（可扩展）
  */
+import { handleAdminRunMonitor, runMonitor } from "./monitor";
+import { handleChat, handleChatIndexClear, handleChatIndexUpsert } from "./chat";
 
 interface Env {
-  /** KV Namespace 绑定，存储评论 */
+  /** KV Namespace 绑定，存储评论 + monitor 状态（前缀 `monitor:`） */
   COMMENTS: KVNamespace;
-  /** 管理员 token，用于删除评论 */
+  /** 管理员 token，用于删除评论 + 手动触发 monitor + 写入向量库 */
   ADMIN_TOKEN?: string;
   /** 允许的来源（部署后填你的网站域名，如 https://research-lab.pages.dev） */
   ALLOWED_ORIGIN?: string;
+  /** Timeline JSON 源，默认 https://shaun-research.pages.dev/timeline.json */
+  TIMELINE_JSON_URL?: string;
+  /** Server 酱推送 SCKEY */
+  SERVERCHAN_KEY?: string;
+  /** PushPlus 推送 token */
+  PUSHPLUS_TOKEN?: string;
+  /** Resend API key + 发件人 + 收件人（逗号分隔） */
+  RESEND_API_KEY?: string;
+  RESEND_FROM?: string;
+  RESEND_TO?: string;
+  /** Workers AI 绑定（嵌入模型 bge-m3） */
+  AI: Ai;
+  /** Vectorize 向量库（报告库语义索引） */
+  VECTORIZE: VectorizeIndex;
+  /** DeepSeek API key（生成模型） */
+  DEEPSEEK_API_KEY?: string;
 }
 
 interface StoredComment {
@@ -592,6 +614,22 @@ export default {
       return handleEmBoards(headers, ctx);
     }
 
+    if (url.pathname === "/admin/run-monitor") {
+      return handleAdminRunMonitor(req, env, headers);
+    }
+
+    if (url.pathname === "/chat") {
+      return handleChat(req, env, headers);
+    }
+
+    if (url.pathname === "/admin/chat-index") {
+      return handleChatIndexUpsert(req, env, headers);
+    }
+
+    if (url.pathname === "/admin/chat-index/clear") {
+      return handleChatIndexClear(req, env, headers);
+    }
+
     if (url.pathname.startsWith("/proxy/")) {
       return handleProxy(req, url, headers, ctx);
     }
@@ -608,5 +646,20 @@ export default {
     }
 
     return text("not found", headers, 404);
+  },
+
+  /**
+   * Cron 触发器（在 wrangler.toml 配置 schedule）：每日跑 timeline 监控
+   */
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(
+      runMonitor(env)
+        .then((report) => {
+          console.log("[monitor] done:", JSON.stringify(report, null, 2));
+        })
+        .catch((e) => {
+          console.error("[monitor] failed:", e instanceof Error ? e.stack : e);
+        })
+    );
   },
 } satisfies ExportedHandler<Env>;
