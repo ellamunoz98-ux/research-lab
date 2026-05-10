@@ -188,11 +188,8 @@ export async function handleChat(
     );
   }
 
-  // 5. SSE 转发：先发 sources 事件，再把 DeepSeek 的 SSE delta 转成 event:delta
-  const { readable, writable } = new TransformStream();
-  const writer = writable.getWriter();
-  const encoder = new TextEncoder();
-
+  // 5. SSE 转发：用 ReadableStream + start 模式（CF Workers 推荐写法，
+  //    避免 TransformStream + 后台 IIFE 在某些情况下死锁）
   const sourceMeta = sources.map((s) => ({
     n: s.n,
     slug: s.slug,
@@ -201,57 +198,65 @@ export async function handleChat(
     anchor: s.anchor,
     score: s.score,
   }));
-  await writer.write(
-    encoder.encode(`event: sources\ndata: ${JSON.stringify(sourceMeta)}\n\n`)
-  );
 
-  (async () => {
-    const reader = dsResp.body!.getReader();
-    const decoder = new TextDecoder();
-    let buf = "";
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop() ?? "";
-        for (const raw of lines) {
-          const line = raw.trim();
-          if (!line.startsWith("data:")) continue;
-          const data = line.slice(5).trim();
-          if (!data) continue;
-          if (data === "[DONE]") {
-            await writer.write(encoder.encode(`event: done\ndata: [DONE]\n\n`));
-            continue;
-          }
-          try {
-            const j = JSON.parse(data);
-            const delta = j.choices?.[0]?.delta?.content;
-            if (delta) {
-              await writer.write(
-                encoder.encode(`event: delta\ndata: ${JSON.stringify({ text: delta })}\n\n`)
-              );
+  const stream = new ReadableStream({
+    async start(controller) {
+      const enc = new TextEncoder();
+
+      // 先发 sources 事件
+      controller.enqueue(
+        enc.encode(`event: sources\ndata: ${JSON.stringify(sourceMeta)}\n\n`)
+      );
+
+      const reader = dsResp.body!.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split("\n");
+          buf = lines.pop() ?? "";
+          for (const raw of lines) {
+            const line = raw.trim();
+            if (!line.startsWith("data:")) continue;
+            const data = line.slice(5).trim();
+            if (!data) continue;
+            if (data === "[DONE]") {
+              controller.enqueue(enc.encode(`event: done\ndata: [DONE]\n\n`));
+              continue;
             }
-          } catch {
-            // 忽略解析失败的中间帧
+            try {
+              const j = JSON.parse(data);
+              const delta = j.choices?.[0]?.delta?.content;
+              if (delta) {
+                controller.enqueue(
+                  enc.encode(
+                    `event: delta\ndata: ${JSON.stringify({ text: delta })}\n\n`
+                  )
+                );
+              }
+            } catch {
+              // 忽略解析失败的中间帧
+            }
           }
         }
+      } catch (e) {
+        controller.enqueue(
+          enc.encode(
+            `event: error\ndata: ${JSON.stringify({
+              message: e instanceof Error ? e.message : String(e),
+            })}\n\n`
+          )
+        );
+      } finally {
+        controller.close();
       }
-    } catch (e) {
-      await writer.write(
-        encoder.encode(
-          `event: error\ndata: ${JSON.stringify({
-            message: e instanceof Error ? e.message : String(e),
-          })}\n\n`
-        )
-      );
-    } finally {
-      await writer.close();
-    }
-  })();
+    },
+  });
 
-  return new Response(readable, {
+  return new Response(stream, {
     headers: {
       ...baseHeaders,
       "Content-Type": "text/event-stream; charset=utf-8",

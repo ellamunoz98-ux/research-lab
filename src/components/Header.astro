@@ -6,7 +6,9 @@ const navItems = [
   { href: "/markets", label: "全球行情" },
   { href: "/industries", label: "行业热力" },
   { href: "/reports", label: "研究报告" },
+  { href: "/assistant", label: "AI 研究助手", accent: true },
   { href: "/news", label: "资讯快线" },
+  { href: "/timeline", label: "申请 Timeline" },
   { href: "/about", label: "关于" },
 ];
 const currentPath = Astro.url.pathname;
@@ -31,12 +33,17 @@ const currentPath = Astro.url.pathname;
             <a
               href={item.href}
               class:list={[
-                "px-3 py-1.5 text-sm rounded-md transition-all relative whitespace-nowrap",
+                "px-3 py-1.5 text-sm rounded-md transition-all relative whitespace-nowrap inline-flex items-center gap-1.5",
                 isActive
                   ? "text-cyan-accent"
-                  : "text-text-secondary hover:text-text-primary",
+                  : item.accent
+                    ? "text-cyan-accent/90 hover:text-cyan-accent"
+                    : "text-text-secondary hover:text-text-primary",
               ]}
             >
+              {item.accent && (
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-accent shadow-[0_0_6px_1px_rgba(34,211,238,0.7)] animate-pulse"></span>
+              )}
               {item.label}
               {isActive && (
                 <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-cyan-accent shadow-[0_0_8px_2px_rgba(34,211,238,0.6)]"></span>

@@ -22,6 +22,8 @@ const fullTitle = title === siteName ? title : `${title} · ${siteName}`;
 
 // 复用评论用的 Worker URL；同一个 Worker 既处理评论也处理 /chat 端点
 const chatApi = import.meta.env.PUBLIC_COMMENTS_API as string | undefined;
+// /assistant 页本身就是全屏聊天，不需要再叠右下角浮窗
+const showChatWidget = chatApi && !Astro.url.pathname.startsWith("/assistant");
 ---
 
 <!doctype html>
@@ -47,6 +49,6 @@ const chatApi = import.meta.env.PUBLIC_COMMENTS_API as string | undefined;
       <slot />
     </main>
     <Footer />
-    {chatApi && <ChatWidget client:only="react" apiUrl={chatApi} />}
+    {showChatWidget && <ChatWidget client:only="react" apiUrl={chatApi!} />}
   </body>
 </html>
