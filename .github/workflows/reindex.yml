@@ -1,0 +1,51 @@
+# 报告库 → AI 向量索引 自动重建
+#
+# 触发条件：
+#   - 推到 main 且 src/content/reports/*.mdx 有改动（增/改/删）
+#   - 改了切块脚本本身
+#   - 在 Actions 页面手动 Run workflow（应急）
+#
+# 需要在 GitHub 仓库 Settings → Secrets and variables → Actions → New repository secret 配置：
+#   WORKER_URL    例 https://research-lab-comments.ellamunoz98.workers.dev
+#   ADMIN_TOKEN   跟 wrangler secret put ADMIN_TOKEN 设的同一个值
+#
+# 工作流程：
+#   1. 切到主分支最新代码
+#   2. 装 Node 20（脚本无 npm 依赖，纯 Node 内建模块）
+#   3. 跑 scripts/index-reports.mjs，对所有非 draft 报告切块 + 上传到 Worker /admin/chat-index
+#      Worker 内部用 bge-m3 嵌入并 upsert 到 Vectorize（同 ID 覆盖，不会重复）
+
+name: Reindex AI Knowledge Base
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/content/reports/**.mdx"
+      - "scripts/index-reports.mjs"
+  workflow_dispatch:
+
+jobs:
+  reindex:
+    name: 重建报告语义索引
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 索引报告库到 Vectorize
+        env:
+          WORKER_URL: ${{ secrets.WORKER_URL }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          if [ -z "$WORKER_URL" ] || [ -z "$ADMIN_TOKEN" ]; then
+            echo "❌ 请在仓库 Settings → Secrets 中配置 WORKER_URL 和 ADMIN_TOKEN"
+            exit 1
+          fi
+          node scripts/index-reports.mjs
