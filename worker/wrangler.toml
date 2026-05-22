@@ -17,10 +17,10 @@ binding = "AI"
 binding = "VECTORIZE"
 index_name = "reports"
 
-# Cron Triggers：每天 UTC 0:00（北京时间 8:00）跑 timeline 监控
-# 改时间请参考 https://crontab.guru/，注意 Workers 用 UTC
-[triggers]
-crons = ["0 0 * * *"]
+# Cron Triggers：已停用（用户 2026-05-22 决定移除申请 Timeline 监控）
+# 要恢复请取消下两行注释
+# [triggers]
+# crons = ["0 0 * * *"]
 
 [vars]
 # 允许跨域的来源；部署后改成你的网站域名（多个用逗号分隔）
