@@ -122,6 +122,7 @@ export default function IpoWindowDashboard() {
   return (
     <div className="space-y-8">
       <HeroPanel report={report} />
+      <MethodologyCard />
       <MainCurve history={report.history} forecast={report.forecast} />
       <div className="grid lg:grid-cols-2 gap-6">
         <BoardsBar boards={report.boards} />
@@ -130,6 +131,205 @@ export default function IpoWindowDashboard() {
       <SectorHeatmap sectors={report.sectors} />
       <SignalsRow signals={report.signals} />
       <Footnote report={report} />
+    </div>
+  );
+}
+
+/* ============== 方法论卡片（默认骨架，可展开看详解） ============== */
+function MethodologyCard() {
+  const [open, setOpen] = useState(false);
+
+  const signals = [
+    { name: "监管节奏", weight: 0.32, color: "#22d3ee",
+      desc: "受理 + 推进 + 批文 滚动 4 周事件数（按板块）", invert: false },
+    { name: "撤否率", weight: 0.10, color: "#fb7185",
+      desc: "(撤回 + 否决) / 同期受理", invert: true },
+    { name: "行业估值", weight: 0.18, color: "#a78bfa",
+      desc: "申万一级行业 PE 当前值（按板块×行业）", invert: false },
+    { name: "新股不破发", weight: 0.12, color: "#34d399",
+      desc: "近 90 天上市新股「现价 ≥ 发行价」占比", invert: false },
+    { name: "流动性", weight: 0.16, color: "#3b82f6",
+      desc: "两融余额 + 沪深 300 成交额 + 新发基金（等权 z 合成）", invert: false },
+    { name: "波动率", weight: 0.12, color: "#f59e0b",
+      desc: "300ETF / 创业板 ETF 期权 QVIX 隐含波动率", invert: true },
+  ];
+
+  return (
+    <div className="glass p-6 md:p-7">
+      <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+        <div>
+          <div className="text-[10px] text-cyan-accent tracking-[0.3em] font-mono mb-1">
+            METHODOLOGY
+          </div>
+          <h3 className="text-lg font-semibold text-text-primary">指数怎么算的</h3>
+        </div>
+        <div className="text-xs text-text-muted font-mono tabular">
+          composite = z_to_score( Σ wᵢ · zᵢ / Σ wᵢ )
+        </div>
+      </div>
+
+      {/* 信号清单 + 权重条 */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+        {signals.map((s) => (
+          <div
+            key={s.name}
+            className="p-3 rounded-lg border border-border-subtle bg-bg-card/40"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-medium text-text-primary">{s.name}</span>
+                {s.invert && (
+                  <span className="text-[9px] px-1 py-px rounded bg-rose-accent/15 text-rose-accent font-mono">
+                    反向
+                  </span>
+                )}
+              </div>
+              <span
+                className="text-xs font-mono font-semibold tabular"
+                style={{ color: s.color }}
+              >
+                {(s.weight * 100).toFixed(0)}%
+              </span>
+            </div>
+            <div className="h-1 w-full rounded-full bg-bg-card overflow-hidden mb-2">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${Math.min(100, (s.weight / 0.32) * 100)}%`, background: s.color }}
+              />
+            </div>
+            <p className="text-[11px] text-text-secondary leading-relaxed">
+              {s.desc}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* regime 阈值带 */}
+      <div className="flex items-center gap-0 rounded-lg overflow-hidden border border-border-subtle text-xs mb-4">
+        <div className="flex-1 px-3 py-2 text-rose-accent" style={{ background: "rgba(251,113,133,0.18)" }}>
+          <span className="font-mono font-semibold">&lt; 45</span> · 关闭 CLOSED
+        </div>
+        <div className="flex-1 px-3 py-2" style={{ background: "rgba(245,158,11,0.18)", color: "#f59e0b" }}>
+          <span className="font-mono font-semibold">45–60</span> · 收窄 NARROWING
+        </div>
+        <div className="flex-1 px-3 py-2 text-emerald-accent" style={{ background: "rgba(52,211,153,0.18)" }}>
+          <span className="font-mono font-semibold">≥ 60</span> · 开放 OPEN
+        </div>
+      </div>
+
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full text-xs text-cyan-accent hover:text-text-primary transition-colors py-2 border-t border-border-subtle flex items-center justify-center gap-2"
+      >
+        {open ? "收起方法论详解" : "展开完整方法论详解"}
+        <svg
+          className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="mt-4 pt-4 border-t border-border-subtle text-sm text-text-secondary leading-relaxed space-y-4 animate-[fadeIn_0.18s_ease-out]">
+          <Section title="为什么做这个">
+            <p>
+              一级 PE / VC 在投决时最大的不确定性是 <strong className="text-text-primary">退出</strong>：
+              项目走到 D 轮、Pre-IPO 后能否顺利在二级市场退出，
+              直接决定 DPI 何时回正。A 股的特殊性在于退出节奏不只受市场决定，
+              <strong className="text-text-primary">监管审核节奏</strong>（受理 → 问询 → 上会 → 注册 → 批文）
+              是显著前置变量 —— 这跟美股市场化 S-1 完全不同。
+            </p>
+            <p>
+              本指数是一个 <strong className="text-text-primary">前瞻信号</strong>，
+              不是回顾型统计；它把"二级估值情绪 + 一级监管节奏 + 流动性 / 波动率"压缩到一个 0–100 的标量，
+              用来给 GP 在做投决时提供「这个赛道的项目在 12–18 个月内
+              <strong className="text-text-primary">大概率能 / 可能能 / 大概率不能</strong>退出」的方向感。
+            </p>
+          </Section>
+
+          <Section title="信号选择 & 权重逻辑">
+            <p>
+              <strong className="text-text-primary">监管节奏权重 0.32 是最高的</strong>，
+              因为 A 股 IPO 在数量层面长期由证监会 + 交易所通过审核进度调控。
+              历史上 2012–13 暂停 IPO、2023 阶段性收紧、2024 大撤否潮 ——
+              这些都在监管侧能更早被观察到。
+            </p>
+            <p>
+              <strong className="text-text-primary">行业估值（0.18）</strong>排第二 —— PE 高的时候 IPO 更容易获得高定价，
+              反推估值低位 = 发行人观望、券商建议撤回；
+              <strong className="text-text-primary">流动性（0.16）</strong> 反映场内承接能力（两融 + 成交 + 新发基金）；
+              <strong className="text-text-primary">新股不破发率（0.12）</strong> 是窗口好坏的滞后但直接证据；
+              <strong className="text-text-primary">波动率（0.12，反向）</strong> 高了发行人会等；
+              <strong className="text-text-primary">撤否率（0.10，反向）</strong> 是监管节奏的负向补充。
+            </p>
+          </Section>
+
+          <Section title="合成方式">
+            <p>
+              对每个 <strong className="text-text-primary">(板块 × 行业)</strong> 切片：
+            </p>
+            <ul className="pl-5 list-disc space-y-1.5 text-text-secondary marker:text-cyan-accent">
+              <li>原始信号按板块 / 全市场各自抓周频原始值（review 按板块、QVIX 全市场广播 等）</li>
+              <li>每条信号做 <strong className="text-text-primary">78 周滚动 z-score</strong>（约 1.5 年窗口，去掉绝对量级，只看相对位置）</li>
+              <li>反向信号取负 z；按上面权重加权求和 → composite_z</li>
+              <li>通过 sigmoid 映射到 0–100：<code className="text-cyan-accent">100 / (1 + e^(-1.1·z))</code></li>
+              <li>按 60 / 45 阈值分类为 OPEN / NARROWING / CLOSED</li>
+            </ul>
+          </Section>
+
+          <Section title="前瞻外推（Forward Projection）">
+            <p>
+              未来 4 季的虚线点是基于<strong className="text-text-primary">动量 + 均值回归</strong>启发式：
+              <code className="text-cyan-accent">L_{`{t+1}`} = L_t + 0.55·drift + 0.20·(anchor − L_t)</code>，
+              drift 取近 6 周变化、anchor 取 78 周均值。这只是一阶外推，
+              <strong className="text-text-primary">不是真正的预测</strong>，
+              更稳的做法（Phase 2）是用"历史窗口指数 → 后续 2 季实际过会 + 发行量"做 lead-lag 回归替换。
+            </p>
+          </Section>
+
+          <Section title="已知局限">
+            <ul className="pl-5 list-disc space-y-1.5 text-text-secondary marker:text-rose-accent">
+              <li>
+                <strong className="text-text-primary">监管节奏需要时间累积</strong>：
+                AkShare 审核接口只返回当前在审快照（无历史），系统每周存一份快照、对相邻两周做 diff 才能形成事件流。
+                上线起 4–8 周内监管节奏信号读数为 0。
+              </li>
+              <li>
+                <strong className="text-text-primary">z-score 基线 1.5 年才稳</strong>：
+                估值 / 新股不破发率这两个本期才入库的信号需要累计 78 周才能形成可靠 z 基线。
+              </li>
+              <li>
+                <strong className="text-text-primary">跨板块不可直接横向比</strong>：
+                科创板允许未盈利、北交所偏专精特新 —— 同一分数在不同板块语义不同，
+                只在同板块内做时序比较才有意义。
+              </li>
+              <li>
+                <strong className="text-text-primary">不构成投资建议</strong>。
+                数据源自公开接口，仅供研究参考。
+              </li>
+            </ul>
+          </Section>
+
+          <Section title="数据 & 更新">
+            <p>
+              数据源：AkShare（封装东方财富 / 申万 / 沪深北交易所 / 巨潮公开接口）。
+              更新频率：<strong className="text-text-primary">每周六 18:00 自动跑一次</strong>，
+              通过 Windows 任务计划触发本地 pipeline → 拷贝 JSON 到本仓库 → git push → Cloudflare Pages 自动构建。
+              全部代码 + 构造规格已开源在本地工程 <code className="text-cyan-accent">ashare_ipo_window/</code>。
+            </p>
+          </Section>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h4 className="text-cyan-accent font-semibold text-sm mb-2">{title}</h4>
+      <div className="space-y-2">{children}</div>
     </div>
   );
 }
