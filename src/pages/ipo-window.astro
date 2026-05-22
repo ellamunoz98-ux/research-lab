@@ -1,0 +1,40 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import IpoWindowDashboard from "../components/IpoWindowDashboard.tsx";
+---
+
+<BaseLayout
+  title="A 股 IPO 退出窗口"
+  description="合成 A 股二级市场 + 监管审核数据的 IPO 退出窗口指数，看板块/行业的当下与外推"
+>
+  <section class="pt-16 pb-10 px-6 max-w-7xl mx-auto">
+    <div class="text-xs text-cyan-accent tracking-[0.3em] font-mono mb-4" data-reveal>
+      IPO EXIT WINDOW · A-SHARE
+    </div>
+    <h1 class="text-5xl md:text-6xl font-bold leading-[1.1] mb-4 text-text-primary" data-reveal>
+      A 股<span class="gradient-text">退出窗口</span>
+    </h1>
+    <p class="text-lg text-text-secondary max-w-3xl leading-relaxed" data-reveal>
+      综合<strong class="text-text-primary">监管审核节奏（受理→问询→上会→注册→批文）</strong>、
+      行业估值分位、新股不破发率、流动性、波动率 5 大维度，
+      合成 4 板块 × 10 行业的 IPO 退出窗口指数。
+      <br class="hidden md:block" />
+      判定 GP 一级项目<strong class="text-text-primary">能否顺利在二级退出</strong>的前置信号 —— 每周六自动刷新。
+    </p>
+  </section>
+
+  <section class="px-6 max-w-7xl mx-auto pb-24" data-reveal>
+    <IpoWindowDashboard client:only="react" />
+  </section>
+</BaseLayout>
+
+<script>
+  import { gsap } from "gsap";
+  document.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el, i) => {
+    gsap.fromTo(
+      el,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.8, ease: "expo.out", delay: i * 0.08 }
+    );
+  });
+</script>
